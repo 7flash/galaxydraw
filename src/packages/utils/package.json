@@ -1,6 +1,6 @@
 {
   "name": "@galaxydo/excalidraw-utils",
-  "version": "0.1.2-6",
+  "version": "0.1.2-18.21.28",
   "main": "dist/excalidraw-utils.min.js",
   "files": [
     "dist/*"
