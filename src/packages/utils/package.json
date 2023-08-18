@@ -1,6 +1,6 @@
 {
   "name": "@galaxydo/excalidraw-utils",
-  "version": "0.1.2-23.8.18.2",
+  "version": "0.1.2-23.8.18.3",
   "main": "dist/excalidraw-utils.min.js",
   "files": [
     "dist/*"
@@ -50,7 +50,8 @@
     "ts-loader": "9.3.1",
     "webpack": "5.76.0",
     "webpack-bundle-analyzer": "4.5.0",
-    "webpack-cli": "4.10.0"
+    "webpack-cli": "4.10.0",
+    "webpack-node-externals": "3.0.0"
   },
   "bugs": "https://github.com/excalidraw/excalidraw/issues",
   "repository": "https://github.com/excalidraw/excalidraw",
