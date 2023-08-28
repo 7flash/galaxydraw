@@ -1,19 +1,19 @@
 import {
+  Arrowhead,
   ExcalidrawElement,
-  ExcalidrawImageElement,
-  ExcalidrawTextElement,
-  ExcalidrawLinearElement,
+  ExcalidrawEmbeddableElement,
+  ExcalidrawFrameElement,
+  ExcalidrawFreeDrawElement,
   ExcalidrawGenericElement,
+  ExcalidrawImageElement,
+  ExcalidrawLinearElement,
+  ExcalidrawTextContainer,
+  ExcalidrawTextElement,
+  FontFamilyValues,
+  GroupId,
   NonDeleted,
   TextAlign,
-  GroupId,
   VerticalAlign,
-  Arrowhead,
-  ExcalidrawFreeDrawElement,
-  FontFamilyValues,
-  ExcalidrawTextContainer,
-  ExcalidrawFrameElement,
-  ExcalidrawEmbeddableElement,
 } from "../element/types";
 import {
   arrayToMap,
@@ -21,7 +21,7 @@ import {
   getUpdatedTimestamp,
   isTestEnv,
 } from "../utils";
-import { randomInteger, randomId } from "../random";
+import { randomId, randomInteger } from "../random";
 import { bumpVersion, newElementWith } from "./mutateElement";
 import { getNewGroupIdsForDuplication } from "../groups";
 import { AppState } from "../types";
@@ -29,12 +29,12 @@ import { getElementAbsoluteCoords } from ".";
 import { adjustXYWithRotation } from "../math";
 import { getResizedElementAbsoluteCoords } from "./bounds";
 import {
+  getBoundTextMaxWidth,
   getContainerElement,
+  getDefaultLineHeight,
   measureText,
   normalizeText,
   wrapText,
-  getBoundTextMaxWidth,
-  getDefaultLineHeight,
 } from "./textElement";
 import {
   DEFAULT_ELEMENT_PROPS,
@@ -120,6 +120,7 @@ const _newElementBase = <T extends ExcalidrawElement>(
     updated: getUpdatedTimestamp(),
     link,
     locked,
+    customData: rest.customData,
   };
   return element;
 };
@@ -148,9 +149,9 @@ export const newFrameElement = (
 ): NonDeleted<ExcalidrawFrameElement> => {
   const frameElement = newElementWith(
     {
+      name: null,
       ..._newElementBase<ExcalidrawFrameElement>("frame", opts),
       type: "frame",
-      name: null,
     },
     {},
   );
@@ -170,12 +171,11 @@ const getTextElementPositionOffsets = (
   },
 ) => {
   return {
-    x:
-      opts.textAlign === "center"
-        ? metrics.width / 2
-        : opts.textAlign === "right"
-        ? metrics.width
-        : 0,
+    x: opts.textAlign === "center"
+      ? metrics.width / 2
+      : opts.textAlign === "right"
+      ? metrics.width
+      : 0,
     y: opts.verticalAlign === "middle" ? metrics.height / 2 : 0,
   };
 };
@@ -414,10 +414,9 @@ const _deepCopyElement = (val: any, depth: number = 0) => {
   const objectType = Object.prototype.toString.call(val);
 
   if (objectType === "[object Object]") {
-    const tmp =
-      typeof val.constructor === "function"
-        ? Object.create(Object.getPrototypeOf(val))
-        : {};
+    const tmp = typeof val.constructor === "function"
+      ? Object.create(Object.getPrototypeOf(val))
+      : {};
     for (const key in val) {
       if (val.hasOwnProperty(key)) {
         // don't copy non-serializable objects like these caches. They'll be
@@ -627,9 +626,9 @@ export const duplicateElements = (
       const newEndBindingId = maybeGetNewId(clonedElement.endBinding.elementId);
       clonedElement.endBinding = newEndBindingId
         ? {
-            ...clonedElement.endBinding,
-            elementId: newEndBindingId,
-          }
+          ...clonedElement.endBinding,
+          elementId: newEndBindingId,
+        }
         : null;
     }
     if ("startBinding" in clonedElement && clonedElement.startBinding) {
@@ -638,9 +637,9 @@ export const duplicateElements = (
       );
       clonedElement.startBinding = newEndBindingId
         ? {
-            ...clonedElement.startBinding,
-            elementId: newEndBindingId,
-          }
+          ...clonedElement.startBinding,
+          elementId: newEndBindingId,
+        }
         : null;
     }
 

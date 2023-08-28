@@ -481,8 +481,6 @@ export const convertToExcalidrawElements = (
       }
       case "frame": {
         excalidrawElement = newFrameElement({
-          width: element?.width || DEFAULT_DIMENSION,
-          height: element?.height || DEFAULT_DIMENSION,
           ...element,
         });
 
