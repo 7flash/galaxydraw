@@ -1,14 +1,15 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`select single element on the scene arrow 1`] = `
-Object {
+exports[`select single element on the scene > arrow 1`] = `
+{
   "angle": 0,
   "backgroundColor": "transparent",
   "boundElements": null,
   "endArrowhead": "arrow",
   "endBinding": null,
   "fillStyle": "hachure",
-  "groupIds": Array [],
+  "frameId": null,
+  "groupIds": [],
   "height": 50,
   "id": "id0",
   "isDeleted": false,
@@ -16,47 +17,46 @@ Object {
   "link": null,
   "locked": false,
   "opacity": 100,
-  "points": Array [
-    Array [
+  "points": [
+    [
       0,
       0,
     ],
-    Array [
-      15,
-      25,
-    ],
-    Array [
+    [
       30,
       50,
     ],
   ],
   "roughness": 1,
-  "seed": 337897,
+  "roundness": {
+    "type": 2,
+  },
+  "seed": 1278240551,
   "startArrowhead": null,
   "startBinding": null,
-  "strokeColor": "#000000",
-  "strokeSharpness": "round",
+  "strokeColor": "#1e1e1e",
   "strokeStyle": "solid",
   "strokeWidth": 1,
   "type": "arrow",
   "updated": 1,
-  "version": 4,
-  "versionNonce": 453191,
+  "version": 3,
+  "versionNonce": 401146281,
   "width": 30,
   "x": 10,
   "y": 10,
 }
 `;
 
-exports[`select single element on the scene arrow escape 1`] = `
-Object {
+exports[`select single element on the scene > arrow escape 1`] = `
+{
   "angle": 0,
   "backgroundColor": "transparent",
   "boundElements": null,
   "endArrowhead": null,
   "endBinding": null,
   "fillStyle": "hachure",
-  "groupIds": Array [],
+  "frameId": null,
+  "groupIds": [],
   "height": 50,
   "id": "id0",
   "isDeleted": false,
@@ -64,31 +64,61 @@ Object {
   "link": null,
   "locked": false,
   "opacity": 100,
-  "points": Array [
-    Array [
+  "points": [
+    [
       0,
       0,
     ],
-    Array [
-      15,
-      25,
-    ],
-    Array [
+    [
       30,
       50,
     ],
   ],
   "roughness": 1,
-  "seed": 337897,
+  "roundness": {
+    "type": 2,
+  },
+  "seed": 1278240551,
   "startArrowhead": null,
   "startBinding": null,
-  "strokeColor": "#000000",
-  "strokeSharpness": "round",
+  "strokeColor": "#1e1e1e",
   "strokeStyle": "solid",
   "strokeWidth": 1,
   "type": "line",
   "updated": 1,
-  "version": 4,
+  "version": 3,
+  "versionNonce": 401146281,
+  "width": 30,
+  "x": 10,
+  "y": 10,
+}
+`;
+
+exports[`select single element on the scene > diamond 1`] = `
+{
+  "angle": 0,
+  "backgroundColor": "transparent",
+  "boundElements": null,
+  "fillStyle": "hachure",
+  "frameId": null,
+  "groupIds": [],
+  "height": 50,
+  "id": "id0",
+  "isDeleted": false,
+  "link": null,
+  "locked": false,
+  "opacity": 100,
+  "roughness": 1,
+  "roundness": {
+    "type": 2,
+  },
+  "seed": 1278240551,
+  "strokeColor": "#1e1e1e",
+  "strokeStyle": "solid",
+  "strokeWidth": 1,
+  "type": "diamond",
+  "updated": 1,
+  "version": 2,
   "versionNonce": 453191,
   "width": 30,
   "x": 10,
@@ -96,13 +126,14 @@ Object {
 }
 `;
 
-exports[`select single element on the scene diamond 1`] = `
-Object {
+exports[`select single element on the scene > ellipse 1`] = `
+{
   "angle": 0,
   "backgroundColor": "transparent",
   "boundElements": null,
   "fillStyle": "hachure",
-  "groupIds": Array [],
+  "frameId": null,
+  "groupIds": [],
   "height": 50,
   "id": "id0",
   "isDeleted": false,
@@ -110,57 +141,31 @@ Object {
   "locked": false,
   "opacity": 100,
   "roughness": 1,
-  "seed": 337897,
-  "strokeColor": "#000000",
-  "strokeSharpness": "sharp",
-  "strokeStyle": "solid",
-  "strokeWidth": 1,
-  "type": "diamond",
-  "updated": 1,
-  "version": 2,
-  "versionNonce": 1278240551,
-  "width": 30,
-  "x": 10,
-  "y": 10,
-}
-`;
-
-exports[`select single element on the scene ellipse 1`] = `
-Object {
-  "angle": 0,
-  "backgroundColor": "transparent",
-  "boundElements": null,
-  "fillStyle": "hachure",
-  "groupIds": Array [],
-  "height": 50,
-  "id": "id0",
-  "isDeleted": false,
-  "link": null,
-  "locked": false,
-  "opacity": 100,
-  "roughness": 1,
-  "seed": 337897,
-  "strokeColor": "#000000",
-  "strokeSharpness": "sharp",
+  "roundness": {
+    "type": 2,
+  },
+  "seed": 1278240551,
+  "strokeColor": "#1e1e1e",
   "strokeStyle": "solid",
   "strokeWidth": 1,
   "type": "ellipse",
   "updated": 1,
   "version": 2,
-  "versionNonce": 1278240551,
+  "versionNonce": 453191,
   "width": 30,
   "x": 10,
   "y": 10,
 }
 `;
 
-exports[`select single element on the scene rectangle 1`] = `
-Object {
+exports[`select single element on the scene > rectangle 1`] = `
+{
   "angle": 0,
   "backgroundColor": "transparent",
   "boundElements": null,
   "fillStyle": "hachure",
-  "groupIds": Array [],
+  "frameId": null,
+  "groupIds": [],
   "height": 50,
   "id": "id0",
   "isDeleted": false,
@@ -168,15 +173,17 @@ Object {
   "locked": false,
   "opacity": 100,
   "roughness": 1,
-  "seed": 337897,
-  "strokeColor": "#000000",
-  "strokeSharpness": "sharp",
+  "roundness": {
+    "type": 3,
+  },
+  "seed": 1278240551,
+  "strokeColor": "#1e1e1e",
   "strokeStyle": "solid",
   "strokeWidth": 1,
   "type": "rectangle",
   "updated": 1,
   "version": 2,
-  "versionNonce": 1278240551,
+  "versionNonce": 453191,
   "width": 30,
   "x": 10,
   "y": 10,

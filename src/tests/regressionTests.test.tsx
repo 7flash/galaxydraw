@@ -12,15 +12,16 @@ import {
   fireEvent,
   render,
   screen,
+  togglePopover,
   waitFor,
 } from "./test-utils";
 import { defaultLang } from "../i18n";
 import { FONT_FAMILY } from "../constants";
-import { t } from "../i18n";
+import { vi } from "vitest";
 
 const { h } = window;
 
-const renderScene = jest.spyOn(Renderer, "renderScene");
+const renderStaticScene = vi.spyOn(Renderer, "renderStaticScene");
 
 const mouse = new Pointer("mouse");
 const finger1 = new Pointer("touch", 1);
@@ -32,7 +33,7 @@ const finger2 = new Pointer("touch", 2);
  * to debug where a test failure came from.
  */
 const checkpoint = (name: string) => {
-  expect(renderScene.mock.calls.length).toMatchSnapshot(
+  expect(renderStaticScene.mock.calls.length).toMatchSnapshot(
     `[${name}] number of renders`,
   );
   expect(h.state).toMatchSnapshot(`[${name}] appState`);
@@ -42,13 +43,12 @@ const checkpoint = (name: string) => {
     expect(element).toMatchSnapshot(`[${name}] element ${i}`),
   );
 };
-
 beforeEach(async () => {
   // Unmount ReactDOM from root
   ReactDOM.unmountComponentAtNode(document.getElementById("root")!);
 
   localStorage.clear();
-  renderScene.mockClear();
+  renderStaticScene.mockClear();
   reseed(7);
   setDateTimeForTests("201933152653");
 
@@ -138,7 +138,7 @@ describe("regression tests", () => {
     [`4${KEYS.O}`, "ellipse", true],
     [`5${KEYS.A}`, "arrow", true],
     [`6${KEYS.L}`, "line", true],
-    [`7${KEYS.X}`, "freedraw", false],
+    [`7${KEYS.P}`, "freedraw", false],
   ] as [string, ExcalidrawElement["type"], boolean][]) {
     for (const key of keys) {
       it(`key ${key} selects ${shape} tool`, () => {
@@ -157,15 +157,17 @@ describe("regression tests", () => {
   }
   it("change the properties of a shape", () => {
     UI.clickTool("rectangle");
+
     mouse.down(10, 10);
     mouse.up(10, 10);
+    togglePopover("Background");
+    UI.clickOnTestId("color-yellow");
+    UI.clickOnTestId("color-red");
 
-    UI.clickLabeledElement("Background");
-    UI.clickLabeledElement(t("colors.fa5252"));
-    UI.clickLabeledElement("Stroke");
-    UI.clickLabeledElement(t("colors.5f3dc4"));
-    expect(API.getSelectedElement().backgroundColor).toBe("#fa5252");
-    expect(API.getSelectedElement().strokeColor).toBe("#5f3dc4");
+    togglePopover("Stroke");
+    UI.clickOnTestId("color-blue");
+    expect(API.getSelectedElement().backgroundColor).toBe("#ffc9c9");
+    expect(API.getSelectedElement().strokeColor).toBe("#1971c2");
   });
 
   it("click on an element and drag it", () => {
@@ -174,7 +176,7 @@ describe("regression tests", () => {
     mouse.up(10, 10);
 
     const { x: prevX, y: prevY } = API.getSelectedElement();
-    mouse.down(-10, -10);
+    mouse.down(-8, -8);
     mouse.up(10, 10);
 
     const { x: nextX, y: nextY } = API.getSelectedElement();
@@ -201,7 +203,7 @@ describe("regression tests", () => {
     ).toBe(1);
 
     Keyboard.withModifierKeys({ alt: true }, () => {
-      mouse.down(-10, -10);
+      mouse.down(-8, -8);
       mouse.up(10, 10);
     });
 
@@ -446,6 +448,8 @@ describe("regression tests", () => {
     UI.clickTool("rectangle");
     // english lang should display `thin` label
     expect(screen.queryByTitle(/thin/i)).not.toBeNull();
+    fireEvent.click(document.querySelector(".dropdown-menu-button")!);
+
     fireEvent.change(document.querySelector(".dropdown-select__language")!, {
       target: { value: "de-DE" },
     });
@@ -485,7 +489,7 @@ describe("regression tests", () => {
     }
 
     Keyboard.withModifierKeys({ ctrl: true }, () => {
-      Keyboard.codePress(CODES.G);
+      Keyboard.keyPress(KEYS.G);
     });
 
     for (const element of h.elements) {
@@ -509,6 +513,51 @@ describe("regression tests", () => {
     expect(groups.size).toBe(2);
   });
 
+  it("should group elements and ungroup them", () => {
+    UI.clickTool("rectangle");
+    mouse.down(10, 10);
+    mouse.up(10, 10);
+
+    UI.clickTool("rectangle");
+    mouse.down(10, -10);
+    mouse.up(10, 10);
+
+    UI.clickTool("rectangle");
+    mouse.down(10, -10);
+    mouse.up(10, 10);
+    const end = mouse.getPosition();
+
+    mouse.reset();
+    mouse.down();
+    mouse.restorePosition(...end);
+    mouse.up();
+
+    for (const element of h.elements) {
+      expect(element.groupIds.length).toBe(0);
+    }
+
+    Keyboard.withModifierKeys({ ctrl: true }, () => {
+      Keyboard.keyPress(KEYS.G);
+    });
+
+    for (const element of h.elements) {
+      expect(element.groupIds.length).toBe(1);
+    }
+
+    mouse.moveTo(-10, -10); // the NW resizing handle is at [0, 0], so moving further
+    mouse.down();
+    mouse.restorePosition(...end);
+    mouse.up();
+
+    Keyboard.withModifierKeys({ ctrl: true, shift: true }, () => {
+      Keyboard.keyPress(KEYS.G);
+    });
+
+    for (const element of h.elements) {
+      expect(element.groupIds.length).toBe(0);
+    }
+  });
+
   it("double click to edit a group", () => {
     UI.clickTool("rectangle");
     mouse.down(10, 10);
@@ -524,7 +573,7 @@ describe("regression tests", () => {
 
     Keyboard.withModifierKeys({ ctrl: true }, () => {
       Keyboard.keyPress(KEYS.A);
-      Keyboard.codePress(CODES.G);
+      Keyboard.keyPress(KEYS.G);
     });
 
     expect(API.getSelectedElements().length).toBe(3);
@@ -561,7 +610,7 @@ describe("regression tests", () => {
       mouse.click();
     });
     Keyboard.withModifierKeys({ ctrl: true }, () => {
-      Keyboard.codePress(CODES.G);
+      Keyboard.keyPress(KEYS.G);
     });
 
     expect(h.elements.map((element) => element.id)).toEqual([
@@ -578,7 +627,7 @@ describe("regression tests", () => {
 
     Keyboard.withModifierKeys({ ctrl: true }, () => {
       Keyboard.keyPress(KEYS.A);
-      Keyboard.codePress(CODES.G);
+      Keyboard.keyPress(KEYS.G);
     });
 
     mouse.doubleClickOn(rectC);
@@ -586,7 +635,7 @@ describe("regression tests", () => {
       mouse.clickOn(rectA);
     });
     Keyboard.withModifierKeys({ ctrl: true }, () => {
-      Keyboard.codePress(CODES.G);
+      Keyboard.keyPress(KEYS.G);
     });
 
     expect(rectC.groupIds.length).toBe(2);
@@ -627,9 +676,10 @@ describe("regression tests", () => {
     mouse.down();
     mouse.up(100, 100);
 
-    // hits bounding box without hitting element
-    mouse.down();
     expect(API.getSelectedElements().length).toBe(1);
+
+    // hits bounding box without hitting element
+    mouse.down(98, 98);
     mouse.up();
     expect(API.getSelectedElements().length).toBe(0);
   });
@@ -699,7 +749,7 @@ describe("regression tests", () => {
 
     // drag element from point on bounding box that doesn't hit element
     mouse.reset();
-    mouse.down();
+    mouse.down(8, 8);
     mouse.up(25, 25);
 
     expect(API.getSelectedElement().x).toEqual(prevX + 25);
@@ -940,8 +990,8 @@ describe("regression tests", () => {
       UI.clickTool("rectangle");
       // change background color since default is transparent
       // and transparent elements can't be selected by clicking inside of them
-      UI.clickLabeledElement("Background");
-      UI.clickLabeledElement(t("colors.fa5252"));
+      togglePopover("Background");
+      UI.clickOnTestId("color-red");
       mouse.down();
       mouse.up(1000, 1000);
 
@@ -975,7 +1025,7 @@ describe("regression tests", () => {
     // Rectangle is already selected since creating
     // it was our last action
     Keyboard.withModifierKeys({ shift: true }, () => {
-      mouse.down();
+      mouse.down(-8, -8);
     });
     expect(API.getSelectedElements().length).toBe(1);
 
@@ -996,7 +1046,7 @@ describe("regression tests", () => {
 
     Keyboard.withModifierKeys({ ctrl: true }, () => {
       Keyboard.keyPress(KEYS.A);
-      Keyboard.codePress(CODES.G);
+      Keyboard.keyPress(KEYS.G);
     });
 
     const selectedGroupIds_prev = h.state.selectedGroupIds;
@@ -1004,6 +1054,28 @@ describe("regression tests", () => {
     mouse.clickOn(rect3);
     expect(h.state.selectedGroupIds).toEqual(selectedGroupIds_prev);
     expect(API.getSelectedElements()).toEqual(selectedElements_prev);
+  });
+
+  it("deleting last but one element in editing group should unselect the group", () => {
+    const rect1 = UI.createElement("rectangle", { x: 10 });
+    const rect2 = UI.createElement("rectangle", { x: 50 });
+
+    UI.group([rect1, rect2]);
+
+    mouse.doubleClickOn(rect1);
+    Keyboard.keyDown(KEYS.DELETE);
+
+    // Clicking on the deleted element, hence in the empty space
+    mouse.clickOn(rect1);
+
+    expect(h.state.selectedGroupIds).toEqual({});
+    expect(API.getSelectedElements()).toEqual([]);
+
+    // Clicking back in and expecting no group selection
+    mouse.clickOn(rect2);
+
+    expect(h.state.selectedGroupIds).toEqual({ [rect2.groupIds[0]]: false });
+    expect(API.getSelectedElements()).toEqual([rect2.get()]);
   });
 
   it("Cmd/Ctrl-click exclusively select element under pointer", () => {
@@ -1040,15 +1112,14 @@ describe("regression tests", () => {
     assertSelectedElements(rect3);
   });
 
-  it("should show fill icons when element has non transparent background", () => {
+  it("should show fill icons when element has non transparent background", async () => {
     UI.clickTool("rectangle");
     expect(screen.queryByText(/fill/i)).not.toBeNull();
     mouse.down();
     mouse.up(10, 10);
     expect(screen.queryByText(/fill/i)).toBeNull();
-
-    UI.clickLabeledElement("Background");
-    UI.clickLabeledElement(t("colors.fa5252"));
+    togglePopover("Background");
+    UI.clickOnTestId("color-red");
     // select rectangle
     mouse.reset();
     mouse.click();
@@ -1110,7 +1181,7 @@ it(
 
     // Create group with first and third rectangle
     Keyboard.withModifierKeys({ ctrl: true }, () => {
-      Keyboard.codePress(CODES.G);
+      Keyboard.keyPress(KEYS.G);
     });
 
     expect(API.getSelectedElements().length).toBe(2);

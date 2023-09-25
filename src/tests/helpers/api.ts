@@ -4,18 +4,28 @@ import {
   ExcalidrawTextElement,
   ExcalidrawLinearElement,
   ExcalidrawFreeDrawElement,
+  ExcalidrawImageElement,
+  FileId,
 } from "../../element/types";
 import { newElement, newTextElement, newLinearElement } from "../../element";
-import { DEFAULT_VERTICAL_ALIGN } from "../../constants";
+import { DEFAULT_VERTICAL_ALIGN, ROUNDNESS } from "../../constants";
 import { getDefaultAppState } from "../../appState";
 import { GlobalTestState, createEvent, fireEvent } from "../test-utils";
 import fs from "fs";
 import util from "util";
 import path from "path";
 import { getMimeType } from "../../data/blob";
-import { newFreeDrawElement } from "../../element/newElement";
+import {
+  newEmbeddableElement,
+  newFrameElement,
+  newFreeDrawElement,
+  newImageElement,
+} from "../../element/newElement";
 import { Point } from "../../types";
 import { getSelectedElements } from "../../scene/selection";
+import { isLinearElementType } from "../../element/typeChecks";
+import { Mutable } from "../../utility-types";
+import { assertNever } from "../../utils";
 
 const readFile = util.promisify(fs.readFile);
 
@@ -33,8 +43,12 @@ export class API {
 
   static getSelectedElements = (
     includeBoundTextElement: boolean = false,
+    includeElementsInFrames: boolean = false,
   ): ExcalidrawElement[] => {
-    return getSelectedElements(h.elements, h.state, includeBoundTextElement);
+    return getSelectedElements(h.elements, h.state, {
+      includeBoundTextElement,
+      includeElementsInFrames,
+    });
   };
 
   static getSelectedElement = (): ExcalidrawElement => {
@@ -77,6 +91,7 @@ export class API {
     y?: number;
     height?: number;
     width?: number;
+    angle?: number;
     id?: string;
     isDeleted?: boolean;
     groupIds?: string[];
@@ -86,7 +101,7 @@ export class API {
     fillStyle?: ExcalidrawGenericElement["fillStyle"];
     strokeWidth?: ExcalidrawGenericElement["strokeWidth"];
     strokeStyle?: ExcalidrawGenericElement["strokeStyle"];
-    strokeSharpness?: ExcalidrawGenericElement["strokeSharpness"];
+    roundness?: ExcalidrawGenericElement["roundness"];
     roughness?: ExcalidrawGenericElement["roughness"];
     opacity?: ExcalidrawGenericElement["opacity"];
     // text props
@@ -103,28 +118,63 @@ export class API {
       : never;
     points?: T extends "arrow" | "line" ? readonly Point[] : never;
     locked?: boolean;
+    fileId?: T extends "image" ? string : never;
+    scale?: T extends "image" ? ExcalidrawImageElement["scale"] : never;
+    status?: T extends "image" ? ExcalidrawImageElement["status"] : never;
+    startBinding?: T extends "arrow"
+      ? ExcalidrawLinearElement["startBinding"]
+      : never;
+    endBinding?: T extends "arrow"
+      ? ExcalidrawLinearElement["endBinding"]
+      : never;
   }): T extends "arrow" | "line"
     ? ExcalidrawLinearElement
     : T extends "freedraw"
     ? ExcalidrawFreeDrawElement
     : T extends "text"
     ? ExcalidrawTextElement
+    : T extends "image"
+    ? ExcalidrawImageElement
     : ExcalidrawGenericElement => {
     let element: Mutable<ExcalidrawElement> = null!;
 
     const appState = h?.state || getDefaultAppState();
 
-    const base = {
+    const base: Omit<
+      ExcalidrawGenericElement,
+      | "id"
+      | "width"
+      | "height"
+      | "type"
+      | "seed"
+      | "version"
+      | "versionNonce"
+      | "isDeleted"
+      | "groupIds"
+      | "frameId"
+      | "link"
+      | "updated"
+    > = {
       x,
       y,
+      angle: rest.angle ?? 0,
       strokeColor: rest.strokeColor ?? appState.currentItemStrokeColor,
       backgroundColor:
         rest.backgroundColor ?? appState.currentItemBackgroundColor,
       fillStyle: rest.fillStyle ?? appState.currentItemFillStyle,
       strokeWidth: rest.strokeWidth ?? appState.currentItemStrokeWidth,
       strokeStyle: rest.strokeStyle ?? appState.currentItemStrokeStyle,
-      strokeSharpness:
-        rest.strokeSharpness ?? appState.currentItemStrokeSharpness,
+      roundness: (
+        rest.roundness === undefined
+          ? appState.currentItemRoundness === "round"
+          : rest.roundness
+      )
+        ? {
+            type: isLinearElementType(type)
+              ? ROUNDNESS.PROPORTIONAL_RADIUS
+              : ROUNDNESS.ADAPTIVE_RADIUS,
+          }
+        : null,
       roughness: rest.roughness ?? appState.currentItemRoughness,
       opacity: rest.opacity ?? appState.currentItemOpacity,
       boundElements: rest.boundElements ?? null,
@@ -141,12 +191,21 @@ export class API {
           ...base,
         });
         break;
+      case "embeddable":
+        element = newEmbeddableElement({
+          type: "embeddable",
+          ...base,
+          validated: null,
+        });
+        break;
       case "text":
+        const fontSize = rest.fontSize ?? appState.currentItemFontSize;
+        const fontFamily = rest.fontFamily ?? appState.currentItemFontFamily;
         element = newTextElement({
           ...base,
           text: rest.text || "test",
-          fontSize: rest.fontSize ?? appState.currentItemFontSize,
-          fontFamily: rest.fontFamily ?? appState.currentItemFontFamily,
+          fontSize,
+          fontFamily,
           textAlign: rest.textAlign ?? appState.currentItemTextAlign,
           verticalAlign: rest.verticalAlign ?? DEFAULT_VERTICAL_ALIGN,
           containerId: rest.containerId ?? undefined,
@@ -167,12 +226,39 @@ export class API {
           ...base,
           width,
           height,
-          type: type as "arrow" | "line",
+          type,
           startArrowhead: null,
           endArrowhead: null,
-          points: rest.points ?? [],
+          points: rest.points ?? [
+            [0, 0],
+            [100, 100],
+          ],
         });
         break;
+      case "image":
+        element = newImageElement({
+          ...base,
+          width,
+          height,
+          type,
+          fileId: (rest.fileId as string as FileId) ?? null,
+          status: rest.status || "saved",
+          scale: rest.scale || [1, 1],
+        });
+        break;
+      case "frame":
+        element = newFrameElement({ ...base, width, height });
+        break;
+      default:
+        assertNever(
+          type,
+          `API.createElement: unimplemented element type ${type}}`,
+        );
+        break;
+    }
+    if (element.type === "arrow") {
+      element.startBinding = rest.startBinding ?? null;
+      element.endBinding = rest.endBinding ?? null;
     }
     if (id) {
       element.id = id;
@@ -204,7 +290,7 @@ export class API {
   };
 
   static drop = async (blob: Blob) => {
-    const fileDropEvent = createEvent.drop(GlobalTestState.canvas);
+    const fileDropEvent = createEvent.drop(GlobalTestState.interactiveCanvas);
     const text = await new Promise<string>((resolve, reject) => {
       try {
         const reader = new FileReader();
@@ -231,6 +317,6 @@ export class API {
         },
       },
     });
-    fireEvent(GlobalTestState.canvas, fileDropEvent);
+    fireEvent(GlobalTestState.interactiveCanvas, fileDropEvent);
   };
 }

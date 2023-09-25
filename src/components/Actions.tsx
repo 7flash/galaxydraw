@@ -1,11 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import { ActionManager } from "../actions/manager";
 import { getNonDeletedElements } from "../element";
 import { ExcalidrawElement, PointerType } from "../element/types";
 import { t } from "../i18n";
 import { useDevice } from "../components/App";
 import {
-  canChangeSharpness,
+  canChangeRoundness,
   canHaveArrowheads,
   getTargetElements,
   hasBackground,
@@ -14,7 +14,7 @@ import {
   hasText,
 } from "../scene";
 import { SHAPES } from "../shapes";
-import { AppState, Zoom } from "../types";
+import { UIAppState, Zoom } from "../types";
 import {
   capitalizeString,
   isTransparent,
@@ -25,16 +25,26 @@ import Stack from "./Stack";
 import { ToolButton } from "./ToolButton";
 import { hasStrokeColor } from "../scene/comparisons";
 import { trackEvent } from "../analytics";
-import { hasBoundTextElement, isBoundToContainer } from "../element/typeChecks";
+import { hasBoundTextElement } from "../element/typeChecks";
 import clsx from "clsx";
 import { actionToggleZenMode } from "../actions";
+import { Tooltip } from "./Tooltip";
+import {
+  shouldAllowVerticalAlign,
+  suppportsHorizontalAlign,
+} from "../element/textElement";
+
+import "./Actions.scss";
+import DropdownMenu from "./dropdownMenu/DropdownMenu";
+import { EmbedIcon, extraToolsIcon, frameToolIcon } from "./icons";
+import { KEYS } from "../keys";
 
 export const SelectedShapeActions = ({
   appState,
   elements,
   renderAction,
 }: {
-  appState: AppState;
+  appState: UIAppState;
   elements: readonly ExcalidrawElement[];
   renderAction: ActionManager["renderAction"];
 }) => {
@@ -79,12 +89,17 @@ export const SelectedShapeActions = ({
 
   return (
     <div className="panelColumn">
-      {((hasStrokeColor(appState.activeTool.type) &&
-        appState.activeTool.type !== "image" &&
-        commonSelectedType !== "image") ||
-        targetElements.some((element) => hasStrokeColor(element.type))) &&
-        renderAction("changeStrokeColor")}
-      {showChangeBackgroundIcons && renderAction("changeBackgroundColor")}
+      <div>
+        {((hasStrokeColor(appState.activeTool.type) &&
+          appState.activeTool.type !== "image" &&
+          commonSelectedType !== "image" &&
+          commonSelectedType !== "frame") ||
+          targetElements.some((element) => hasStrokeColor(element.type))) &&
+          renderAction("changeStrokeColor")}
+      </div>
+      {showChangeBackgroundIcons && (
+        <div>{renderAction("changeBackgroundColor")}</div>
+      )}
       {showFillIcons && renderAction("changeFillStyle")}
 
       {(hasStrokeWidth(appState.activeTool.type) ||
@@ -103,9 +118,9 @@ export const SelectedShapeActions = ({
         </>
       )}
 
-      {(canChangeSharpness(appState.activeTool.type) ||
-        targetElements.some((element) => canChangeSharpness(element.type))) && (
-        <>{renderAction("changeSharpness")}</>
+      {(canChangeRoundness(appState.activeTool.type) ||
+        targetElements.some((element) => canChangeRoundness(element.type))) && (
+        <>{renderAction("changeRoundness")}</>
       )}
 
       {(hasText(appState.activeTool.type) ||
@@ -115,14 +130,13 @@ export const SelectedShapeActions = ({
 
           {renderAction("changeFontFamily")}
 
-          {renderAction("changeTextAlign")}
+          {suppportsHorizontalAlign(targetElements) &&
+            renderAction("changeTextAlign")}
         </>
       )}
 
-      {targetElements.some(
-        (element) =>
-          hasBoundTextElement(element) || isBoundToContainer(element),
-      ) && renderAction("changeVerticalAlign")}
+      {shouldAllowVerticalAlign(targetElements) &&
+        renderAction("changeVerticalAlign")}
       {(canHaveArrowheads(appState.activeTool.type) ||
         targetElements.some((element) => canHaveArrowheads(element.type))) && (
         <>{renderAction("changeArrowhead")}</>
@@ -163,7 +177,16 @@ export const SelectedShapeActions = ({
             )}
             {targetElements.length > 2 &&
               renderAction("distributeHorizontally")}
-            <div className="iconRow">
+            {/* breaks the row ˇˇ */}
+            <div style={{ flexBasis: "100%", height: 0 }} />
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: ".5rem",
+                marginTop: "-0.5rem",
+              }}
+            >
               {renderAction("alignTop")}
               {renderAction("alignVerticallyCentered")}
               {renderAction("alignBottom")}
@@ -190,71 +213,196 @@ export const SelectedShapeActions = ({
 };
 
 export const ShapesSwitcher = ({
-  canvas,
+  interactiveCanvas,
   activeTool,
   setAppState,
   onImageAction,
   appState,
 }: {
-  canvas: HTMLCanvasElement | null;
-  activeTool: AppState["activeTool"];
-  setAppState: React.Component<any, AppState>["setState"];
+  interactiveCanvas: HTMLCanvasElement | null;
+  activeTool: UIAppState["activeTool"];
+  setAppState: React.Component<any, UIAppState>["setState"];
   onImageAction: (data: { pointerType: PointerType | null }) => void;
-  appState: AppState;
-}) => (
-  <>
-    {SHAPES.map(({ value, icon, key }, index) => {
-      const label = t(`toolBar.${value}`);
-      const letter = key && (typeof key === "string" ? key : key[0]);
-      const shortcut = letter
-        ? `${capitalizeString(letter)} ${t("helpDialog.or")} ${index + 1}`
-        : `${index + 1}`;
-      return (
-        <ToolButton
-          className="Shape"
-          key={value}
-          type="radio"
-          icon={icon}
-          checked={activeTool.type === value}
-          name="editor-current-shape"
-          title={`${capitalizeString(label)} — ${shortcut}`}
-          keyBindingLabel={`${index + 1}`}
-          aria-label={capitalizeString(label)}
-          aria-keyshortcuts={shortcut}
-          data-testid={value}
-          onPointerDown={({ pointerType }) => {
-            if (!appState.penDetected && pointerType === "pen") {
-              setAppState({
-                penDetected: true,
-                penMode: true,
+  appState: UIAppState;
+}) => {
+  const [isExtraToolsMenuOpen, setIsExtraToolsMenuOpen] = useState(false);
+  const device = useDevice();
+  return (
+    <>
+      {SHAPES.map(({ value, icon, key, numericKey, fillable }, index) => {
+        const label = t(`toolBar.${value}`);
+        const letter =
+          key && capitalizeString(typeof key === "string" ? key : key[0]);
+        const shortcut = letter
+          ? `${letter} ${t("helpDialog.or")} ${numericKey}`
+          : `${numericKey}`;
+        return (
+          <ToolButton
+            className={clsx("Shape", { fillable })}
+            key={value}
+            type="radio"
+            icon={icon}
+            checked={activeTool.type === value}
+            name="editor-current-shape"
+            title={`${capitalizeString(label)} — ${shortcut}`}
+            keyBindingLabel={numericKey || letter}
+            aria-label={capitalizeString(label)}
+            aria-keyshortcuts={shortcut}
+            data-testid={`toolbar-${value}`}
+            onPointerDown={({ pointerType }) => {
+              if (!appState.penDetected && pointerType === "pen") {
+                setAppState({
+                  penDetected: true,
+                  penMode: true,
+                });
+              }
+            }}
+            onChange={({ pointerType }) => {
+              if (appState.activeTool.type !== value) {
+                trackEvent("toolbar", value, "ui");
+              }
+              const nextActiveTool = updateActiveTool(appState, {
+                type: value,
               });
-            }
-          }}
-          onChange={({ pointerType }) => {
-            if (appState.activeTool.type !== value) {
-              trackEvent("toolbar", value, "ui");
-            }
-            const nextActiveTool = updateActiveTool(appState, {
-              type: value,
-            });
-            setAppState({
-              activeTool: nextActiveTool,
-              multiElement: null,
-              selectedElementIds: {},
-            });
-            setCursorForShape(canvas, {
-              ...appState,
-              activeTool: nextActiveTool,
-            });
-            if (value === "image") {
-              onImageAction({ pointerType });
-            }
-          }}
-        />
-      );
-    })}
-  </>
-);
+              setAppState({
+                activeTool: nextActiveTool,
+                activeEmbeddable: null,
+                multiElement: null,
+                selectedElementIds: {},
+              });
+              setCursorForShape(interactiveCanvas, {
+                ...appState,
+                activeTool: nextActiveTool,
+              });
+              if (value === "image") {
+                onImageAction({ pointerType });
+              }
+            }}
+          />
+        );
+      })}
+      <div className="App-toolbar__divider" />
+      {/* TEMP HACK because dropdown doesn't work well inside mobile toolbar */}
+      {device.isMobile ? (
+        <>
+          <ToolButton
+            className={clsx("Shape", { fillable: false })}
+            type="radio"
+            icon={frameToolIcon}
+            checked={activeTool.type === "frame"}
+            name="editor-current-shape"
+            title={`${capitalizeString(
+              t("toolBar.frame"),
+            )} — ${KEYS.F.toLocaleUpperCase()}`}
+            keyBindingLabel={KEYS.F.toLocaleUpperCase()}
+            aria-label={capitalizeString(t("toolBar.frame"))}
+            aria-keyshortcuts={KEYS.F.toLocaleUpperCase()}
+            data-testid={`toolbar-frame`}
+            onPointerDown={({ pointerType }) => {
+              if (!appState.penDetected && pointerType === "pen") {
+                setAppState({
+                  penDetected: true,
+                  penMode: true,
+                });
+              }
+            }}
+            onChange={({ pointerType }) => {
+              trackEvent("toolbar", "frame", "ui");
+              const nextActiveTool = updateActiveTool(appState, {
+                type: "frame",
+              });
+              setAppState({
+                activeTool: nextActiveTool,
+                multiElement: null,
+                selectedElementIds: {},
+                activeEmbeddable: null,
+              });
+            }}
+          />
+          <ToolButton
+            className={clsx("Shape", { fillable: false })}
+            type="radio"
+            icon={EmbedIcon}
+            checked={activeTool.type === "embeddable"}
+            name="editor-current-shape"
+            title={capitalizeString(t("toolBar.embeddable"))}
+            aria-label={capitalizeString(t("toolBar.embeddable"))}
+            data-testid={`toolbar-embeddable`}
+            onPointerDown={({ pointerType }) => {
+              if (!appState.penDetected && pointerType === "pen") {
+                setAppState({
+                  penDetected: true,
+                  penMode: true,
+                });
+              }
+            }}
+            onChange={({ pointerType }) => {
+              trackEvent("toolbar", "embeddable", "ui");
+              const nextActiveTool = updateActiveTool(appState, {
+                type: "embeddable",
+              });
+              setAppState({
+                activeTool: nextActiveTool,
+                multiElement: null,
+                selectedElementIds: {},
+                activeEmbeddable: null,
+              });
+            }}
+          />
+        </>
+      ) : (
+        <DropdownMenu open={isExtraToolsMenuOpen}>
+          <DropdownMenu.Trigger
+            className="App-toolbar__extra-tools-trigger"
+            onToggle={() => setIsExtraToolsMenuOpen(!isExtraToolsMenuOpen)}
+            title={t("toolBar.extraTools")}
+          >
+            {extraToolsIcon}
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content
+            onClickOutside={() => setIsExtraToolsMenuOpen(false)}
+            onSelect={() => setIsExtraToolsMenuOpen(false)}
+            className="App-toolbar__extra-tools-dropdown"
+          >
+            <DropdownMenu.Item
+              onSelect={() => {
+                const nextActiveTool = updateActiveTool(appState, {
+                  type: "frame",
+                });
+                setAppState({
+                  activeTool: nextActiveTool,
+                  multiElement: null,
+                  selectedElementIds: {},
+                });
+              }}
+              icon={frameToolIcon}
+              shortcut={KEYS.F.toLocaleUpperCase()}
+              data-testid="toolbar-frame"
+            >
+              {t("toolBar.frame")}
+            </DropdownMenu.Item>
+            <DropdownMenu.Item
+              onSelect={() => {
+                const nextActiveTool = updateActiveTool(appState, {
+                  type: "embeddable",
+                });
+                setAppState({
+                  activeTool: nextActiveTool,
+                  multiElement: null,
+                  selectedElementIds: {},
+                });
+              }}
+              icon={EmbedIcon}
+              data-testid="toolbar-embeddable"
+            >
+              {t("toolBar.embeddable")}
+            </DropdownMenu.Item>
+          </DropdownMenu.Content>
+        </DropdownMenu>
+      )}
+    </>
+  );
+};
 
 export const ZoomActions = ({
   renderAction,
@@ -263,11 +411,11 @@ export const ZoomActions = ({
   renderAction: ActionManager["renderAction"];
   zoom: Zoom;
 }) => (
-  <Stack.Col gap={1}>
-    <Stack.Row gap={1} align="center">
+  <Stack.Col gap={1} className="zoom-actions">
+    <Stack.Row align="center">
       {renderAction("zoomOut")}
-      {renderAction("zoomIn")}
       {renderAction("resetZoom")}
+      {renderAction("zoomIn")}
     </Stack.Row>
   </Stack.Col>
 );
@@ -280,23 +428,27 @@ export const UndoRedoActions = ({
   className?: string;
 }) => (
   <div className={`undo-redo-buttons ${className}`}>
-    {renderAction("undo", { size: "small" })}
-    {renderAction("redo", { size: "small" })}
+    <div className="undo-button-container">
+      <Tooltip label={t("buttons.undo")}>{renderAction("undo")}</Tooltip>
+    </div>
+    <div className="redo-button-container">
+      <Tooltip label={t("buttons.redo")}> {renderAction("redo")}</Tooltip>
+    </div>
   </div>
 );
 
 export const ExitZenModeAction = ({
-  executeAction,
+  actionManager,
   showExitZenModeBtn,
 }: {
-  executeAction: ActionManager["executeAction"];
+  actionManager: ActionManager;
   showExitZenModeBtn: boolean;
 }) => (
   <button
     className={clsx("disable-zen-mode", {
       "disable-zen-mode--visible": showExitZenModeBtn,
     })}
-    onClick={() => executeAction(actionToggleZenMode)}
+    onClick={() => actionManager.executeAction(actionToggleZenMode)}
   >
     {t("buttons.exitZenMode")}
   </button>

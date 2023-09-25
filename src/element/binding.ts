@@ -26,6 +26,7 @@ import Scene from "../scene/Scene";
 import { LinearElementEditor } from "./linearElementEditor";
 import { arrayToMap, tupleToCoors } from "../utils";
 import { KEYS } from "../keys";
+import { getBoundTextElement, handleBindTextResize } from "./textElement";
 
 export type SuggestedBinding =
   | NonDeleted<ExcalidrawBindableElement>
@@ -38,7 +39,7 @@ export type SuggestedPointBinding = [
 ];
 
 export const shouldEnableBindingForPointerEvent = (
-  event: React.PointerEvent<HTMLCanvasElement>,
+  event: React.PointerEvent<HTMLElement>,
 ) => {
   return !event[KEYS.CTRL_OR_CMD];
 };
@@ -189,7 +190,7 @@ export const maybeBindLinearElement = (
   }
 };
 
-const bindLinearElement = (
+export const bindLinearElement = (
   linearElement: NonDeleted<ExcalidrawLinearElement>,
   hoveredElement: ExcalidrawBindableElement,
   startOrEnd: "start" | "end",
@@ -361,6 +362,10 @@ export const updateBoundElements = (
       endBinding,
       changedElement as ExcalidrawBindableElement,
     );
+    const boundText = getBoundTextElement(element);
+    if (boundText) {
+      handleBindTextResize(element, false);
+    }
   });
 };
 
@@ -469,6 +474,7 @@ const maybeCalculateNewGapWhenScaling = (
   return { elementId, gap: newGap, focus };
 };
 
+// TODO: this is a bottleneck, optimise
 export const getEligibleElementsForBinding = (
   elements: NonDeleted<ExcalidrawElement>[],
 ): SuggestedBinding[] => {

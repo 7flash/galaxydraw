@@ -14,16 +14,19 @@ import { encryptData, decryptData } from "../../data/encryption";
 import { MIME_TYPES } from "../../constants";
 import { reconcileElements } from "../collab/reconciliation";
 import { getSyncableElements, SyncableExcalidrawElement } from ".";
+import { ResolutionType } from "../../utility-types";
 
 // private
 // -----------------------------------------------------------------------------
 
 let FIREBASE_CONFIG: Record<string, any>;
 try {
-  FIREBASE_CONFIG = JSON.parse(process.env.REACT_APP_FIREBASE_CONFIG);
+  FIREBASE_CONFIG = JSON.parse(import.meta.env.VITE_APP_FIREBASE_CONFIG);
 } catch (error: any) {
   console.warn(
-    `Error JSON parsing firebase config. Supplied value: ${process.env.REACT_APP_FIREBASE_CONFIG}`,
+    `Error JSON parsing firebase config. Supplied value: ${
+      import.meta.env.VITE_APP_FIREBASE_CONFIG
+    }`,
   );
   FIREBASE_CONFIG = {};
 }
@@ -330,6 +333,7 @@ export const loadFilesFromFirebase = async (
             id,
             dataURL,
             created: metadata?.created || Date.now(),
+            lastRetrieved: metadata?.created || Date.now(),
           });
         } else {
           erroredFiles.set(id, true);
