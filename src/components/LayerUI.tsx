@@ -219,109 +219,95 @@ const LayerUI = ({
       <FixedSideContainer side="top">
         <div className="App-menu App-menu_top">
           <Stack.Col gap={6} className={clsx("App-menu_top__left")}>
-            {renderCanvasActions()}
-            <Stack.Col
-              gap={4}
-              className={clsx({
-                "disable-pointerEvents": appState.zenModeEnabled,
-              })}
-            >
-              {/*appState.viewModeEnabled
-              ? renderViewModeCanvasActions()
-              : renderCanvasActions()*/}
-              {shouldRenderSelectedShapeActions && renderSelectedShapeActions()}
-            </Stack.Col>
-            {!appState.viewModeEnabled && (
-              <Section heading="shapes" className="shapes-section">
-                {(heading: React.ReactNode) => (
-                  <div style={{ position: "relative" }}>
-                    {renderWelcomeScreen && (
-                      <tunnels.WelcomeScreenToolbarHintTunnel.Out />
-                    )}
-                    <Stack.Col gap={4} align="start">
-                      <Stack.Row
-                        gap={1}
-                        className={clsx("App-toolbar-container", {
+            {shouldRenderSelectedShapeActions && renderSelectedShapeActions()}
+          </Stack.Col>
+          {!appState.viewModeEnabled && (
+            <Section heading="shapes" className="shapes-section">
+              {(heading: React.ReactNode) => (
+                <div style={{ position: "relative" }}>
+                  {renderWelcomeScreen && (
+                    <tunnels.WelcomeScreenToolbarHintTunnel.Out />
+                  )}
+                  <Stack.Col gap={4} align="start">
+                    <Stack.Row
+                      gap={1}
+                      className={clsx("App-toolbar-container", {
+                        "zen-mode": appState.zenModeEnabled,
+                      })}
+                    >
+                      <Island
+                        padding={1}
+                        className={clsx("App-toolbar", {
                           "zen-mode": appState.zenModeEnabled,
                         })}
                       >
-                        <Island
-                          padding={1}
-                          className={clsx("App-toolbar", {
-                            "zen-mode": appState.zenModeEnabled,
-                          })}
-                        >
-                          <HintViewer
-                            appState={appState}
-                            isMobile={device.isMobile}
-                            device={device}
-                            app={app}
+                        <HintViewer
+                          appState={appState}
+                          isMobile={device.isMobile}
+                          device={device}
+                          app={app}
+                        />
+                        {heading}
+                        <Stack.Row gap={1}>
+                          <PenModeButton
+                            zenModeEnabled={appState.zenModeEnabled}
+                            checked={appState.penMode}
+                            onChange={onPenModeToggle}
+                            title={t("toolBar.penMode")}
+                            penDetected={appState.penDetected}
                           />
-                          {heading}
-                          <Stack.Row gap={1}>
-                            <PenModeButton
-                              zenModeEnabled={appState.zenModeEnabled}
-                              checked={appState.penMode}
-                              onChange={onPenModeToggle}
-                              title={t("toolBar.penMode")}
-                              penDetected={appState.penDetected}
-                            />
-                            <LockButton
-                              checked={appState.activeTool.locked}
-                              onChange={onLockToggle}
-                              title={t("toolBar.lock")}
-                            />
+                          <LockButton
+                            checked={appState.activeTool.locked}
+                            onChange={onLockToggle}
+                            title={t("toolBar.lock")}
+                          />
 
-                            <div className="App-toolbar__divider" />
+                          <div className="App-toolbar__divider" />
 
-                            <HandButton
-                              checked={isHandToolActive(appState)}
-                              onChange={() => onHandToolToggle()}
-                              title={t("toolBar.hand")}
-                              isMobile
-                            />
+                          <HandButton
+                            checked={isHandToolActive(appState)}
+                            onChange={() => onHandToolToggle()}
+                            title={t("toolBar.hand")}
+                            isMobile
+                          />
 
-                            <ShapesSwitcher
-                              appState={appState}
-                              interactiveCanvas={interactiveCanvas}
-                              activeTool={appState.activeTool}
-                              setAppState={setAppState}
-                              onImageAction={({ pointerType }) => {
-                                onImageAction({
-                                  insertOnCanvasDirectly: pointerType !== "mouse",
-                                });
-                              }}
-                            />
-                          </Stack.Row>
-                        </Island>
-                      </Stack.Row>
-                    </Stack.Col>
-                  </div>
-                )}
-              </Section>
-            )}
-            <div
-              className={clsx(
-                "layer-ui__wrapper__top-right zen-mode-transition",
-                {
-                  "transition-right": appState.zenModeEnabled,
-                },
+                          <ShapesSwitcher
+                            appState={appState}
+                            interactiveCanvas={interactiveCanvas}
+                            activeTool={appState.activeTool}
+                            setAppState={setAppState}
+                            onImageAction={({ pointerType }) => {
+                              onImageAction({
+                                insertOnCanvasDirectly: pointerType !== "mouse",
+                              });
+                            }}
+                          />
+                        </Stack.Row>
+                      </Island>
+                    </Stack.Row>
+                  </Stack.Col>
+                </div>
               )}
-            >
-              <UserList collaborators={appState.collaborators} />
-              {renderTopRightUI?.(device.isMobile, appState)}
-              {!appState.viewModeEnabled &&
-                // hide button when sidebar docked
-                (!isSidebarDocked ||
-                  appState.openSidebar?.name !== DEFAULT_SIDEBAR.name) && (
-                  <tunnels.DefaultSidebarTriggerTunnel.Out />
-                )}
-              <UserList
-                collaborators={appState.collaborators}
-                actionManager={actionManager}
-              />
+            </Section>
+          )}
+          <div
+            className={clsx(
+              "layer-ui__wrapper__top-right zen-mode-transition",
+              {
+                "transition-right": appState.zenModeEnabled,
+              },
+            )}
+          >
+            <UserList collaborators={appState.collaborators} />
+            {renderTopRightUI?.(device.isMobile, appState)}
+            {!appState.viewModeEnabled &&
+              // hide button when sidebar docked
+              (!isSidebarDocked ||
+                appState.openSidebar?.name !== DEFAULT_SIDEBAR.name) && (
+                <tunnels.DefaultSidebarTriggerTunnel.Out />
+              )}
             // {renderTopRightUI?.(device.isMobile, appState)}
-            </div>
+          </div>
         </div>
       </FixedSideContainer>
     );
