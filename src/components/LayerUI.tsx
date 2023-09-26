@@ -218,8 +218,20 @@ const LayerUI = ({
     return (
       <FixedSideContainer side="top">
         <div className="App-menu App-menu_top">
+<<<<<<< HEAD
           <Stack.Col gap={6} className={clsx("App-menu_top__left")}>
             {renderCanvasActions()}
+=======
+          <Stack.Col
+            gap={4}
+            className={clsx({
+              "disable-pointerEvents": appState.zenModeEnabled,
+            })}
+          >
+            {/*appState.viewModeEnabled
+              ? renderViewModeCanvasActions()
+              : renderCanvasActions()*/}
+>>>>>>> 7ed7886b (sep26 - second)
             {shouldRenderSelectedShapeActions && renderSelectedShapeActions()}
           </Stack.Col>
           {!appState.viewModeEnabled && (
@@ -299,6 +311,7 @@ const LayerUI = ({
               },
             )}
           >
+<<<<<<< HEAD
             <UserList collaborators={appState.collaborators} />
             {renderTopRightUI?.(device.isMobile, appState)}
             {!appState.viewModeEnabled &&
@@ -307,6 +320,13 @@ const LayerUI = ({
                 appState.openSidebar?.name !== DEFAULT_SIDEBAR.name) && (
                 <tunnels.DefaultSidebarTriggerTunnel.Out />
               )}
+=======
+            <UserList
+              collaborators={appState.collaborators}
+              actionManager={actionManager}
+            />
+            // {renderTopRightUI?.(device.isMobile, appState)}
+>>>>>>> 7ed7886b (sep26 - second)
           </div>
         </div>
       </FixedSideContainer>
