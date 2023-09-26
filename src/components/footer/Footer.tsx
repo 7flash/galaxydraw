@@ -82,7 +82,6 @@ const Footer = ({
             onClick={() => actionManager.executeAction(actionShortcuts)}
           />
         </div>
-        // {actionManager.renderAction("toggleShortcuts")}
       </div>
       <ExitZenModeAction
         actionManager={actionManager}

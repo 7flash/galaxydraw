@@ -306,7 +306,6 @@ const LayerUI = ({
                 appState.openSidebar?.name !== DEFAULT_SIDEBAR.name) && (
                 <tunnels.DefaultSidebarTriggerTunnel.Out />
               )}
-            // {renderTopRightUI?.(device.isMobile, appState)}
           </div>
         </div>
       </FixedSideContainer>
