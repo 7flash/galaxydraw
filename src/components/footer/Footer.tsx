@@ -76,16 +76,13 @@ const Footer = ({
           "transition-right disable-pointerEvents": appState.zenModeEnabled,
         })}
       >
-<<<<<<< HEAD:src/components/footer/Footer.tsx
         <div style={{ position: "relative" }}>
           {renderWelcomeScreen && <WelcomeScreenHelpHintTunnel.Out />}
           <HelpButton
             onClick={() => actionManager.executeAction(actionShortcuts)}
           />
         </div>
-=======
         // {actionManager.renderAction("toggleShortcuts")}
->>>>>>> 7ed7886b (sep26 - second):src/components/Footer.tsx
       </div>
       <ExitZenModeAction
         actionManager={actionManager}
