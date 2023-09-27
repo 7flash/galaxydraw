@@ -5568,6 +5568,7 @@ class App extends React.Component<AppProps, AppState> {
         macros: {
           'save': true,
           'open': true,
+          'publish': true,
         },
       },
       ...FRAME_STYLE,
