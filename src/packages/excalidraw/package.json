@@ -1,6 +1,6 @@
 {
   "name": "@galaxydo/excalidraw",
-  "version": "0.15.2-sep28-first",
+  "version": "0.15.2-oct22-first",
   "main": "main.js",
   "types": "types/packages/excalidraw/index.d.ts",
   "files": [
