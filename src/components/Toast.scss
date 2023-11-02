@@ -1,17 +1,16 @@
-@import "../css/variables.module";
-
 .excalidraw {
   .Toast {
     $closeButtonSize: 1.2rem;
     $closeButtonPadding: 0.4rem;
 
     animation: fade-in 0.5s;
-    background-color: var(--button-gray-1);
+    background-color: #0F0F0F; /* dark background for cosmic look */
     border-radius: 4px;
     bottom: 10px;
+    right: 10px; /* makes toast appear at the bottom right */
     box-sizing: border-box;
+    color: #00FF00; /* green color for matrix look */
     cursor: default;
-    left: 50%;
     margin-left: -150px;
     padding: 4px 0;
     position: absolute;
@@ -21,8 +20,8 @@
 
     .Toast__message {
       padding: 0 $closeButtonSize + ($closeButtonPadding);
-      color: var(--popup-text-color);
       white-space: pre-wrap;
+      font-family: 'Courier New', Courier, monospace; /* font similar to matrix */
     }
 
     .close {
@@ -34,6 +33,7 @@
       .ToolIcon__icon {
         width: $closeButtonSize;
         height: $closeButtonSize;
+        color: #00FF00; /* green close icon */
       }
     }
   }
