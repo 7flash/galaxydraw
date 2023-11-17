@@ -149,9 +149,9 @@ export const newFrameElement = (
 ): NonDeleted<ExcalidrawFrameElement> => {
   const frameElement = newElementWith(
     {
-      name: null,
       ..._newElementBase<ExcalidrawFrameElement>("frame", opts),
       type: "frame",
+      name: opts.name,
     },
     {},
   );

@@ -2133,7 +2133,6 @@ class App extends React.Component<AppProps, AppState> {
       // event else some browsers (FF...) will clear the clipboardData
       // (something something security)
       let file = event?.clipboardData?.files[0];
-
       const data = await parseClipboard(event, isPlainPaste);
       if (!file && data.text && !isPlainPaste) {
         const string = data.text.trim();
@@ -2263,17 +2262,24 @@ class App extends React.Component<AppProps, AppState> {
 
     const [gridX, gridY] = getGridPoint(dx, dy, this.state.gridSize);
 
-    const newElements = duplicateElements(
-      elements.map((element) => {
-        return newElementWith(element, {
-          x: element.x + gridX - minX,
-          y: element.y + gridY - minY,
-        });
-      }),
-      {
-        randomizeSeed: !opts.retainSeed,
-      },
-    );
+    const els = this.scene.getNonDeletedElements().map(el => el.id);
+
+    let newElements = elements.map((element) => {
+      return newElementWith(element, {
+        x: element.x + gridX - minX,
+        y: element.y + gridY - minY,
+      });
+    });
+
+    newElements = [
+      ...newElements.filter(el => !els.includes(el.id)),
+      ...duplicateElements(
+        newElements.filter(el => els.includes(el.id)),
+        {
+          randomizeSeed: !opts.retainSeed,
+        },
+      )
+    ];
 
     const nextElements = [
       ...this.scene.getElementsIncludingDeleted(),

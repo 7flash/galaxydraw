@@ -43,6 +43,7 @@ import { actionZoomIn, actionZoomOut } from "../actions/actionCanvas";
 import App from "../components/App";
 import { LinearElementEditor } from "./linearElementEditor";
 import { parseClipboard } from "../clipboard";
+import { basicSetup, EditorView } from 'codemirror'
 
 const getTransform = (
   width: number,
@@ -151,6 +152,7 @@ export const textWysiwyg = ({
     const { textAlign, verticalAlign } = updatedTextElement;
 
     if (updatedTextElement && isTextElement(updatedTextElement)) {
+      // debugger;
       let coordX = updatedTextElement.x;
       let coordY = updatedTextElement.y;
       const container = getContainerElement(updatedTextElement);
@@ -299,8 +301,21 @@ export const textWysiwyg = ({
     }
   };
 
+  const extensions = [
+    // basicSetup,
+  ]
+ //  const view = new EditorView({doc: 'November 15', extensions: [
+ //    EditorView.updateListener.of((v:ViewUpdate) => {
+ //            if (v.docChanged) {
+ // onChange(normalizeText(v.state.doc.text.join('\n')));
+ //            }
+ //        })
+ //  ]
+ //  })
+  // const editable = view.dom;
   const editable = document.createElement("textarea");
-
+  // console.log('editable ', editable );
+  
   editable.dir = "auto";
   editable.tabIndex = 0;
   editable.dataset.type = "wysiwyg";
@@ -371,7 +386,8 @@ export const textWysiwyg = ({
   }
 
   editable.onkeydown = (event) => {
-    if (!event.shiftKey && actionZoomIn.keyTest(event)) {
+    console.log('editable onkeydown', event);
+        if (!event.shiftKey && actionZoomIn.keyTest(event)) {
       event.preventDefault();
       app.actionManager.executeAction(actionZoomIn);
       updateWysiwygStyle();
@@ -678,7 +694,7 @@ export const textWysiwyg = ({
 
   // select on init (focusing is done separately inside the bindBlurEvent()
   // because we need it to happen *after* the blur event from `pointerdown`)
-  editable.select();
+  // editable.select();
   bindBlurEvent();
 
   // reposition wysiwyg in case of canvas is resized. Using ResizeObserver
@@ -698,7 +714,9 @@ export const textWysiwyg = ({
     passive: false,
     capture: true,
   });
-  excalidrawContainer
+
+      excalidrawContainer
     ?.querySelector(".excalidraw-textEditorContainer")!
     .appendChild(editable);
+
 };
