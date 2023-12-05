@@ -2,6 +2,7 @@ import {
   ArrowIcon,
   DiamondIcon,
   EllipseIcon,
+  EmbedIcon,
   EraserIcon,
   FreedrawIcon,
   ImageIcon,
@@ -9,10 +10,30 @@ import {
   RectangleIcon,
   SelectionIcon,
   TextIcon,
+  frameToolIcon,
+  laserPointerToolIcon,
 } from "./components/icons";
 import { KEYS } from "./keys";
 
 export const SHAPES = [
+  {
+    icon: EmbedIcon,
+    value: "embeddable",
+    key: KEYS.W,
+    fillable: true,
+  },
+  {
+    icon: frameToolIcon,
+    value: "frame",
+    key: KEYS.F,
+    fillable: true,
+  },
+  {
+    icon: laserPointerToolIcon,
+    value: "laser",
+    key: KEYS.L,
+    fillable: true,
+  },
   {
     icon: SelectionIcon,
     value: "selection",
