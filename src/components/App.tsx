@@ -1241,12 +1241,8 @@ class App extends React.Component<AppProps, AppState> {
         frameNameJSX = (
           <input
             autoFocus
+            readOnly
             value={frameNameInEdit}
-            onChange={(e) => {
-              mutateElement(f, {
-                name: e.target.value,
-              });
-            }}
             onBlur={() => reset()}
             onKeyDown={(event) => {
               // for some inexplicable reason, `onBlur` triggered on ESC
@@ -1873,19 +1869,7 @@ class App extends React.Component<AppProps, AppState> {
   };
 
   public onMagicframeToolSelect = () => {
-    if (!this.OPENAI_KEY) {
-      this.setState({
-        openDialog: {
-          name: "settings",
-          tab: "diagram-to-code",
-          source: "tool",
-        },
-      });
-      trackEvent("ai", "tool-select (missing key)", "d2c");
-      return;
-    }
-
-    const selectedElements = this.scene.getSelectedElements({
+     const selectedElements = this.scene.getSelectedElements({
       selectedElementIds: this.state.selectedElementIds,
     });
 
