@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { ActionManager } from "../actions/manager";
 import { getNonDeletedElements } from "../element";
-import { ExcalidrawElement, ExcalidrawElementType } from "../element/types";
+import { ExcalidrawElement, ExcalidrawElementType, ExcalidrawTextElement } from "../element/types";
 import { t } from "../i18n";
 import { useDevice } from "../components/App";
 import {
@@ -41,6 +41,81 @@ import {
 } from "./icons";
 import { KEYS } from "../keys";
 import { useTunnels } from "../context/tunnels";
+
+export const ShapeMacros = ({
+  appState,
+  elements,
+  executeMacro,
+}: {
+  appState: UIAppState;
+  elements: readonly ExcalidrawElement[];
+  executeMacro: Function
+}) => {
+
+    const nit = new Map<string, string[]>();
+    const kit = 17;
+
+  try {
+    const targetElements = getTargetElements(
+      getNonDeletedElements(elements),
+      appState,
+    );
+
+    for (const bit of targetElements) {
+      const cit = bit.boundElements?.filter(abit => abit.type == 'arrow' || abit.type == 'meta').map(abit => abit.id);
+      if (cit) {
+        const dit = cit.map(acit => elements.find(el => el.id == acit));
+        for (const adit of dit) {
+          if (adit) {
+            const zadit = adit.id;
+            let git = '';
+            if (adit.type == 'arrow') {
+              if (adit.startBinding?.elementId != bit.id) continue;
+              if (!adit.endBinding?.elementId) continue;
+              const fit = adit.boundElements?.find(xadit => xadit.type == 'text');
+              if (fit) {
+                const afit = elements.find(el => el.id == fit.id) as ExcalidrawTextElement;
+                if (afit) {
+                  git = afit.text;
+                  if (git.length > kit) {
+                    git = git.substring(0, kit);
+                  }
+                }
+              }
+            } else if (adit.type == 'meta') {
+              // TODO: introducing meta-elements to handle use case of virtual arrows
+              //  which are not rendered but can have customData and can be bound to other elements
+              const nadit = (adit as any).customData;
+              if (nadit?.startBinding?.elementId != bit.id) continue;
+              if (!nadit.endBinding?.elementId) continue;
+              git = nadit.label;
+            }
+            if (git.length > 0) {
+              if (nit.has(git)) {
+                nit.get(git)!.push(zadit);
+              } else {
+                nit.set(git, [zadit]);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    console.log('ShapeMacros', nit);
+
+  } catch (err) {
+    console.error('ShapeMacros', err);
+  }
+  return (
+    nit ? (<div className="panelColumn">
+      <fieldset>
+        <legend>Execute Macros</legend>
+
+      </fieldset>
+    </div>) : <></>
+  );
+};
 
 export const SelectedShapeActions = ({
   appState,
@@ -95,6 +170,13 @@ export const SelectedShapeActions = ({
   return (
     <div className="panelColumn">
       <div>
+        <fieldset>
+          <div className="buttonList">
+            {renderAction("group")}
+            {renderAction("ungroup")}
+          </div>
+        </fieldset>
+
         {((hasStrokeColor(appState.activeTool.type) &&
           appState.activeTool.type !== "image" &&
           commonSelectedType !== "image" &&
@@ -118,36 +200,36 @@ export const SelectedShapeActions = ({
 
       {(hasStrokeStyle(appState.activeTool.type) ||
         targetElements.some((element) => hasStrokeStyle(element.type))) && (
-        <>
-          {renderAction("changeStrokeStyle")}
-          {renderAction("changeSloppiness")}
-        </>
-      )}
+          <>
+            {renderAction("changeStrokeStyle")}
+            {renderAction("changeSloppiness")}
+          </>
+        )}
 
       {(canChangeRoundness(appState.activeTool.type) ||
         targetElements.some((element) => canChangeRoundness(element.type))) && (
-        <>{renderAction("changeRoundness")}</>
-      )}
+          <>{renderAction("changeRoundness")}</>
+        )}
 
       {(appState.activeTool.type === "text" ||
         targetElements.some(isTextElement)) && (
-        <>
-          {renderAction("changeFontSize")}
+          <>
+            {renderAction("changeFontSize")}
 
-          {renderAction("changeFontFamily")}
+            {renderAction("changeFontFamily")}
 
-          {(appState.activeTool.type === "text" ||
-            suppportsHorizontalAlign(targetElements)) &&
-            renderAction("changeTextAlign")}
-        </>
-      )}
+            {(appState.activeTool.type === "text" ||
+              suppportsHorizontalAlign(targetElements)) &&
+              renderAction("changeTextAlign")}
+          </>
+        )}
 
       {shouldAllowVerticalAlign(targetElements) &&
         renderAction("changeVerticalAlign")}
       {(canHaveArrowheads(appState.activeTool.type) ||
         targetElements.some((element) => canHaveArrowheads(element.type))) && (
-        <>{renderAction("changeArrowhead")}</>
-      )}
+          <>{renderAction("changeArrowhead")}</>
+        )}
 
       {renderAction("changeOpacity")}
 
@@ -238,12 +320,14 @@ export const ShapesSwitcher = ({
 
   const { TTDDialogTriggerTunnel } = useTunnels();
 
+  if (!app || !UIOptions) return (<></>);
+
   return (
     <>
       {SHAPES.map(({ value, icon, key, numericKey, fillable }, index) => {
         if (
           UIOptions.tools?.[
-            value as Extract<typeof value, keyof AppProps["UIOptions"]["tools"]>
+          value as Extract<typeof value, keyof AppProps["UIOptions"]["tools"]>
           ] === false
         ) {
           return null;
@@ -312,32 +396,7 @@ export const ShapesSwitcher = ({
           onSelect={() => setIsExtraToolsMenuOpen(false)}
           className="App-toolbar__extra-tools-dropdown"
         >
-          <DropdownMenu.Item
-            onSelect={() => app.setActiveTool({ type: "frame" })}
-            icon={frameToolIcon}
-            shortcut={KEYS.F.toLocaleUpperCase()}
-            data-testid="toolbar-frame"
-            selected={frameToolSelected}
-          >
-            {t("toolBar.frame")}
-          </DropdownMenu.Item>
-          <DropdownMenu.Item
-            onSelect={() => app.setActiveTool({ type: "embeddable" })}
-            icon={EmbedIcon}
-            data-testid="toolbar-embeddable"
-            selected={embeddableToolSelected}
-          >
-            {t("toolBar.embeddable")}
-          </DropdownMenu.Item>
-          <DropdownMenu.Item
-            onSelect={() => app.setActiveTool({ type: "laser" })}
-            icon={laserPointerToolIcon}
-            data-testid="toolbar-laser"
-            selected={laserToolSelected}
-            shortcut={KEYS.K.toLocaleUpperCase()}
-          >
-            {t("toolBar.laser")}
-          </DropdownMenu.Item>
+
           <div style={{ margin: "6px 0", fontSize: 14, fontWeight: 600 }}>
             Generate
           </div>
