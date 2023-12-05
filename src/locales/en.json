@@ -256,7 +256,8 @@
   "headings": {
     "canvasActions": "Canvas actions",
     "selectedShapeActions": "Selected shape actions",
-    "shapes": "Shapes"
+    "shapes": "Shapes",
+    "shapeMacros": "Selected shape macros"
   },
   "hints": {
     "canvasPanning": "To move canvas, hold mouse wheel or spacebar while dragging, or use the hand tool",
