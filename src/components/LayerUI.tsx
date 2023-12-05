@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import React from "react";
+import React, { useMemo } from "react";
 import { ActionManager } from "../actions/manager";
 import {
   CLASSES,
@@ -20,7 +20,7 @@ import {
   AppClassProperties,
 } from "../types";
 import { capitalizeString, isShallowEqual } from "../utils";
-import { SelectedShapeActions, ShapesSwitcher } from "./Actions";
+import { SelectedShapeActions, ShapeMacros, ShapesSwitcher } from "./Actions";
 import { ErrorDialog } from "./ErrorDialog";
 import { ImageExportDialog } from "./ImageExportDialog";
 import { FixedSideContainer } from "./FixedSideContainer";
@@ -207,7 +207,29 @@ const LayerUI = ({
       {renderWelcomeScreen && <tunnels.WelcomeScreenMenuHintTunnel.Out />}
     </div>
   );
-
+const renderShapeMacros = () => (
+  <Section
+    heading="shapeMacros"
+    className={clsx("shape-macros zen-mode-transition", {
+      "transition-left": appState.zenModeEnabled,
+    })}
+  >
+    <Island
+      className={CLASSES.SHAPE_ACTIONS_MENU}
+      padding={2}
+      style={{
+        maxHeight: `${appState.height - 166}px`, // Adjusted for overflow prevention similar to the original function.
+      }}
+    >
+      {/* Assuming ShapeMacros is a component that takes appState and elements as props */}
+      <ShapeMacros 
+        appState={appState} 
+        elements={elements} 
+        executeMacro={console.log} // Assuming macroManager has a method to execute macros.
+      />
+    </Island>
+  </Section>
+);
   const renderSelectedShapeActions = () => (
     <Section
       heading="selectedShapeActions"
@@ -239,12 +261,14 @@ const LayerUI = ({
       elements,
     );
 
+    const macrosMemoized = useMemo(renderShapeMacros, [appState.selectedElementIds]);
+    const actionsMemoized = useMemo(renderSelectedShapeActions, [appState.selectedElementIds]); // TODO: make PR
+
     return (
       <FixedSideContainer side="top">
         <div className="App-menu App-menu_top">
           <Stack.Col gap={6} className={clsx("App-menu_top__left")}>
-            {renderCanvasActions()}
-            {shouldRenderSelectedShapeActions && renderSelectedShapeActions()}
+            {shouldRenderSelectedShapeActions && actionsMemoized}
           </Stack.Col>
           {!appState.viewModeEnabled && (
             <Section heading="shapes" className="shapes-section">
@@ -286,16 +310,13 @@ const LayerUI = ({
                             onChange={onLockToggle}
                             title={t("toolBar.lock")}
                           />
-
                           <div className="App-toolbar__divider" />
-
                           <HandButton
                             checked={isHandToolActive(appState)}
                             onChange={() => onHandToolToggle()}
                             title={t("toolBar.hand")}
                             isMobile
                           />
-
                           <ShapesSwitcher
                             appState={appState}
                             activeTool={appState.activeTool}
@@ -330,23 +351,9 @@ const LayerUI = ({
               )}
             </Section>
           )}
-          <div
-            className={clsx(
-              "layer-ui__wrapper__top-right zen-mode-transition",
-              {
-                "transition-right": appState.zenModeEnabled,
-              },
-            )}
-          >
-            <UserList collaborators={appState.collaborators} />
-            {renderTopRightUI?.(device.editor.isMobile, appState)}
-            {!appState.viewModeEnabled &&
-              // hide button when sidebar docked
-              (!isSidebarDocked ||
-                appState.openSidebar?.name !== DEFAULT_SIDEBAR.name) && (
-                <tunnels.DefaultSidebarTriggerTunnel.Out />
-              )}
-          </div>
+          <Stack.Col gap={6} className={clsx("App-menu_top__left")}>
+            {shouldRenderSelectedShapeActions && macrosMemoized}
+          </Stack.Col>
         </div>
       </FixedSideContainer>
     );
@@ -430,8 +437,8 @@ const LayerUI = ({
                         ? "strokeColor"
                         : "backgroundColor"
                       : colorPickerType === "elementBackground"
-                      ? "backgroundColor"
-                      : "strokeColor"]: color,
+                        ? "backgroundColor"
+                        : "strokeColor"]: color,
                   },
                   false,
                 );
@@ -521,8 +528,8 @@ const LayerUI = ({
             className="layer-ui__wrapper"
             style={
               appState.openSidebar &&
-              isSidebarDocked &&
-              device.editor.canFitSidebar
+                isSidebarDocked &&
+                device.editor.canFitSidebar
                 ? { width: `calc(100% - ${LIBRARY_SIDEBAR_WIDTH}px)` }
                 : {}
             }
