@@ -314,19 +314,13 @@
   }
 
   .App-menu_top {
-    grid-template-columns: 1fr 2fr 1fr;
-    grid-gap: 2rem;
+    grid-template-columns: 1fr 1fr 1fr;
     align-items: flex-start;
     cursor: default;
     pointer-events: none !important;
 
     & > * {
       pointer-events: var(--ui-pointerEvents);
-    }
-
-    @media (min-width: 1536px) {
-      grid-template-columns: 1fr 1fr 1fr;
-      grid-gap: 3rem;
     }
   }
 
@@ -383,7 +377,6 @@
     padding: 0.75rem;
     width: 202px;
     box-sizing: border-box;
-    position: absolute;
   }
 
   .dropdown-select {
