@@ -29,7 +29,7 @@ const ExcalidrawBase = (props: ExcalidrawProps) => {
     zenModeEnabled,
     gridModeEnabled,
     libraryReturnUrl,
-    theme,
+    theme = "dark",
     name,
     renderCustomStats,
     onPaste,
