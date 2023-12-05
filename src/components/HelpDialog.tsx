@@ -120,7 +120,9 @@ export const HelpDialog = ({ onClose }: { onClose?: () => void }) => {
         title={t("helpDialog.title")}
         className={"HelpDialog"}
       >
-        <Header />
+        <Section title={"Macros"}>
+          <p>1. Execute AI Prompts - connect input text to output text with arrow, and write prompt on the arrow</p>
+        </Section>
         <Section title={t("helpDialog.shortcuts")}>
           <ShortcutIsland
             className="HelpDialog__island--tools"
