@@ -69,6 +69,11 @@ type _ExcalidrawElementBase = Readonly<{
   customData?: Record<string, any>;
 }>;
 
+export type ExcalidrawMetaElement = {
+  type: "meta",
+  customData: any
+};
+
 export type ExcalidrawSelectionElement = _ExcalidrawElementBase & {
   type: "selection";
 };
@@ -170,7 +175,8 @@ export type ExcalidrawElement =
   | ExcalidrawFrameElement
   | ExcalidrawMagicFrameElement
   | ExcalidrawIframeElement
-  | ExcalidrawEmbeddableElement;
+  | ExcalidrawEmbeddableElement
+  | ExcalidrawMetaElement;
 
 export type NonDeleted<TElement extends ExcalidrawElement> = TElement & {
   isDeleted: boolean;

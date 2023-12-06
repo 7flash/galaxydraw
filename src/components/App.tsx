@@ -4172,7 +4172,7 @@ class App extends React.Component<AppProps, AppState> {
     includeBoundTextElement: boolean = false,
     includeLockedElements: boolean = false,
   ): NonDeleted<ExcalidrawElement>[] {
-    const elements =
+    let elements =
       includeBoundTextElement && includeLockedElements
         ? this.scene.getNonDeletedElements()
         : this.scene
@@ -4183,6 +4183,8 @@ class App extends React.Component<AppProps, AppState> {
                 (includeBoundTextElement ||
                   !(isTextElement(element) && element.containerId)),
             );
+
+    elements = elements.filter(it => it.type != 'meta');
 
     return getElementsAtPosition(elements, (element) =>
       hitTest(element, this.state, this.frameNameBoundsCache, x, y),
@@ -5975,7 +5977,7 @@ class App extends React.Component<AppProps, AppState> {
                       editingGroupId: prevState.editingGroupId,
                       selectedElementIds: nextSelectedElementIds,
                     },
-                    this.scene.getNonDeletedElements(),
+                    this.scene.getNonDeletedElements().filter(it => it.type != 'meta'),
                     prevState,
                     this,
                   ),
@@ -5999,7 +6001,7 @@ class App extends React.Component<AppProps, AppState> {
   };
 
   private isASelectedElement(hitElement: ExcalidrawElement | null): boolean {
-    return hitElement != null && this.state.selectedElementIds[hitElement.id];
+    return hitElement != null && this.state.selectedElementIds[hitElement.id] && hitElement.type != 'meta';
   }
 
   private isHittingCommonBoundingBoxOfSelectedElements(
@@ -7012,7 +7014,7 @@ class App extends React.Component<AppProps, AppState> {
       if (this.state.activeTool.type === "selection") {
         pointerDownState.boxSelection.hasOccurred = true;
 
-        const elements = this.scene.getNonDeletedElements();
+        const elements = this.scene.getNonDeletedElements().filter(it => it.type != 'meta');
 
         // box-select line editor points
         if (this.state.editingLinearElement) {
@@ -7801,7 +7803,7 @@ class App extends React.Component<AppProps, AppState> {
                 editingGroupId: prevState.editingGroupId,
                 selectedElementIds: { [hitElement.id]: true },
               },
-              this.scene.getNonDeletedElements(),
+              this.scene.getNonDeletedElements().filter(it => it.type != 'meta'),
               prevState,
               this,
             ),

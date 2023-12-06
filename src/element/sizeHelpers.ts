@@ -9,6 +9,7 @@ import { viewportCoordsToSceneCoords } from "../utils";
 export const isInvisiblySmallElement = (
   element: ExcalidrawElement,
 ): boolean => {
+  if (element.type == 'meta') return true;
   if (isLinearElement(element) || isFreeDrawElement(element)) {
     return element.points.length < 2;
   }

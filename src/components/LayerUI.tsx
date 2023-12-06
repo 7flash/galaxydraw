@@ -207,29 +207,31 @@ const LayerUI = ({
       {renderWelcomeScreen && <tunnels.WelcomeScreenMenuHintTunnel.Out />}
     </div>
   );
-const renderShapeMacros = () => (
-  <Section
-    heading="shapeMacros"
-    className={clsx("shape-macros zen-mode-transition", {
-      "transition-left": appState.zenModeEnabled,
-    })}
-  >
-    <Island
-      className={CLASSES.SHAPE_ACTIONS_MENU}
-      padding={2}
-      style={{
-        maxHeight: `${appState.height - 166}px`, // Adjusted for overflow prevention similar to the original function.
-      }}
+  const renderShapeMacros = () => (
+    <Section
+      heading="shapeMacros"
+      className={clsx("shape-macros zen-mode-transition", {
+        "transition-left": appState.zenModeEnabled,
+      })}
     >
-      {/* Assuming ShapeMacros is a component that takes appState and elements as props */}
-      <ShapeMacros 
-        appState={appState} 
-        elements={elements} 
-        executeMacro={console.log} // Assuming macroManager has a method to execute macros.
-      />
-    </Island>
-  </Section>
-);
+      <Island
+        className={CLASSES.SHAPE_ACTIONS_MENU}
+        padding={2}
+        style={{
+          maxHeight: `${appState.height - 166}px`, // Adjusted for overflow prevention similar to the original function.
+        }}
+      >
+        {/* Assuming ShapeMacros is a component that takes appState and elements as props */}
+        <ShapeMacros
+          appState={appState}
+          elements={elements}
+          executeMacro={(arrowIds) => {
+            window.webui.execute(...arrowIds);
+          }}
+        />
+      </Island>
+    </Section>
+  );
   const renderSelectedShapeActions = () => (
     <Section
       heading="selectedShapeActions"

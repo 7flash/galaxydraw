@@ -80,6 +80,8 @@ const {
   TTDDialogTrigger,
 } = window.ExcalidrawLib;
 
+window.convertToExcalidrawElements = convertToExcalidrawElements;
+
 const COMMENT_ICON_DIMENSION = 32;
 const COMMENT_INPUT_HEIGHT = 50;
 const COMMENT_INPUT_WIDTH = 150;
@@ -91,6 +93,10 @@ export interface AppProps {
 }
 
 export default function App({ appTitle, useCustom, customArgs }: AppProps) {
+  window.webui = {
+    execute: console.log,
+  }
+
   const appRef = useRef<any>(null);
   const [viewModeEnabled, setViewModeEnabled] = useState(false);
   const [zenModeEnabled, setZenModeEnabled] = useState(false);
@@ -126,13 +132,14 @@ export default function App({ appTitle, useCustom, customArgs }: AppProps) {
     if (!excalidrawAPI) {
       return;
     }
+    window.ea = excalidrawAPI;
     const fetchData = async () => {
       const res = await fetch("/images/rocket.jpeg");
       const imageData = await res.blob();
       const reader = new FileReader();
       reader.readAsDataURL(imageData);
 
-      reader.onload = function () {
+      reader.onload = function() {
         const imagesArray: BinaryFileData[] = [
           {
             id: "rocket" as BinaryFileData["id"],
@@ -143,11 +150,50 @@ export default function App({ appTitle, useCustom, customArgs }: AppProps) {
           },
         ];
 
-        //@ts-ignore
-        initialStatePromiseRef.current.promise.resolve({
+        const initialDataExcalidrawElements = convertToExcalidrawElements(initialData.elements);
+
+        const metaElementId = nanoid();
+        const initialArrowElement = initialDataExcalidrawElements.find(it => it.type == 'arrow');
+        const arrowLabelText = initialDataExcalidrawElements.find(it => it.id == initialArrowElement.boundElements[0].id).text;
+        const startBindingId = initialArrowElement.startBinding.elementId;
+        console.log('startBindingId', startBindingId);
+        const elements =
+          [
+            ...initialDataExcalidrawElements.map(it => {
+              console.log('it.id', it.id)
+              if (it.id == startBindingId) {
+                it.boundElements.push({ type: 'meta', id: metaElementId })
+              }
+              return it;
+            }),
+            {
+              id: metaElementId,
+              type: "meta",
+              customData: {
+                ...initialArrowElement,
+                boundElements: [
+                  ...initialArrowElement.boundElements.map(it => {
+                    if (it.type == 'text') {
+                      it.text = arrowLabelText;
+                    }
+                    return it;
+                  }),
+                ]
+              }
+            },
+          ];
+        const initialDataResolved = {
           ...initialData,
-          elements: convertToExcalidrawElements(initialData.elements),
-        });
+          elements
+        };
+
+        //@ts-ignore
+        initialStatePromiseRef.current.promise.resolve(initialDataResolved);
+
+        setTimeout(() => {
+          excalidrawAPI.updateScene({ elements })
+        }, 100);
+
         excalidrawAPI.addFiles(imagesArray);
       };
     };
@@ -300,12 +346,10 @@ export default function App({ appTitle, useCustom, customArgs }: AppProps) {
         { sceneX: commentIcons[id].x, sceneY: commentIcons[id].y },
         appstate,
       );
-      ele.style.left = `${
-        x - COMMENT_ICON_DIMENSION / 2 - appstate!.offsetLeft
-      }px`;
-      ele.style.top = `${
-        y - COMMENT_ICON_DIMENSION / 2 - appstate!.offsetTop
-      }px`;
+      ele.style.left = `${x - COMMENT_ICON_DIMENSION / 2 - appstate!.offsetLeft
+        }px`;
+      ele.style.top = `${y - COMMENT_ICON_DIMENSION / 2 - appstate!.offsetTop
+        }px`;
     });
   };
 
@@ -536,390 +580,249 @@ export default function App({ appTitle, useCustom, customArgs }: AppProps) {
   return (
     <div className="App" ref={appRef}>
       <h1>{appTitle}</h1>
-      {/* TODO fix type */}
-      <ExampleSidebar>
-        <div className="button-wrapper">
-          <button onClick={loadSceneOrLibrary}>Load Scene or Library</button>
-          <button className="update-scene" onClick={updateScene}>
-            Update Scene
-          </button>
-          <button
-            className="reset-scene"
-            onClick={() => {
-              excalidrawAPI?.resetScene();
-            }}
-          >
-            Reset Scene
-          </button>
-          <button
-            onClick={() => {
-              const libraryItems: LibraryItems = [
-                {
-                  status: "published",
-                  id: "1",
-                  created: 1,
-                  elements: initialData.libraryItems[1] as any,
-                },
-                {
-                  status: "unpublished",
-                  id: "2",
-                  created: 2,
-                  elements: initialData.libraryItems[1] as any,
-                },
-              ];
-              excalidrawAPI?.updateLibrary({
-                libraryItems,
-              });
-            }}
-          >
-            Update Library
-          </button>
-
-          <label>
-            <input
-              type="checkbox"
-              checked={viewModeEnabled}
-              onChange={() => setViewModeEnabled(!viewModeEnabled)}
-            />
-            View mode
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              checked={zenModeEnabled}
-              onChange={() => setZenModeEnabled(!zenModeEnabled)}
-            />
-            Zen mode
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              checked={gridModeEnabled}
-              onChange={() => setGridModeEnabled(!gridModeEnabled)}
-            />
-            Grid mode
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              checked={theme === "dark"}
-              onChange={() => {
-                setTheme(theme === "light" ? "dark" : "light");
-              }}
-            />
-            Switch to Dark Theme
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              checked={disableImageTool === true}
-              onChange={() => {
-                setDisableImageTool(!disableImageTool);
-              }}
-            />
-            Disable Image Tool
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              checked={isCollaborating}
-              onChange={() => {
-                if (!isCollaborating) {
-                  const collaborators = new Map();
-                  collaborators.set("id1", {
-                    username: "Doremon",
-                    avatarUrl: "images/doremon.png",
-                  });
-                  collaborators.set("id2", {
-                    username: "Excalibot",
-                    avatarUrl: "images/excalibot.png",
-                  });
-                  collaborators.set("id3", {
-                    username: "Pika",
-                    avatarUrl: "images/pika.jpeg",
-                  });
-                  collaborators.set("id4", {
-                    username: "fallback",
-                    avatarUrl: "https://example.com",
-                  });
-                  excalidrawAPI?.updateScene({ collaborators });
-                } else {
-                  excalidrawAPI?.updateScene({
-                    collaborators: new Map(),
-                  });
-                }
-                setIsCollaborating(!isCollaborating);
-              }}
-            />
-            Show collaborators
-          </label>
-          <div>
-            <button onClick={onCopy.bind(null, "png")}>
-              Copy to Clipboard as PNG
-            </button>
-            <button onClick={onCopy.bind(null, "svg")}>
-              Copy to Clipboard as SVG
-            </button>
-            <button onClick={onCopy.bind(null, "json")}>
-              Copy to Clipboard as JSON
-            </button>
-          </div>
-          <div
+      <div className="excalidraw-wrapper">
+        <Excalidraw
+          excalidrawAPI={(api: ExcalidrawImperativeAPI) =>
+            setExcalidrawAPI(api)
+          }
+          initialData={initialStatePromiseRef.current.promise}
+          onChange={(elements, state) => {
+            // console.info("Elements :", elements, "State : ", state);
+          }}
+          onPointerUpdate={(payload: {
+            pointer: { x: number; y: number };
+            button: "down" | "up";
+            pointersMap: Gesture["pointers"];
+          }) => setPointerData(payload)}
+          viewModeEnabled={viewModeEnabled}
+          zenModeEnabled={zenModeEnabled}
+          gridModeEnabled={gridModeEnabled}
+          theme={theme}
+          name="Custom name of drawing"
+          UIOptions={{
+            canvasActions: {
+              loadScene: false,
+            },
+            tools: { image: !disableImageTool },
+          }}
+          renderTopRightUI={renderTopRightUI}
+          onLinkOpen={onLinkOpen}
+          onPointerDown={onPointerDown}
+          onScrollChange={rerenderCommentIcons}
+          // allow all urls
+          validateEmbeddable={true}
+        >
+          {excalidrawAPI && (
+            <Footer>
+              <CustomFooter excalidrawAPI={excalidrawAPI} />
+            </Footer>
+          )}
+          <WelcomeScreen />
+          <Sidebar name="custom">
+            <Sidebar.Tabs>
+              <Sidebar.Header />
+              <Sidebar.Tab tab="one">Tab one!</Sidebar.Tab>
+              <Sidebar.Tab tab="two">Tab two!</Sidebar.Tab>
+              <Sidebar.TabTriggers>
+                <Sidebar.TabTrigger tab="one">One</Sidebar.TabTrigger>
+                <Sidebar.TabTrigger tab="two">Two</Sidebar.TabTrigger>
+              </Sidebar.TabTriggers>
+            </Sidebar.Tabs>
+          </Sidebar>
+          <Sidebar.Trigger
+            name="custom"
+            tab="one"
             style={{
-              display: "flex",
-              gap: "1em",
-              justifyContent: "center",
-              marginTop: "1em",
+              position: "absolute",
+              left: "50%",
+              transform: "translateX(-50%)",
+              bottom: "20px",
+              zIndex: 9999999999999999,
             }}
           >
-            <div>x: {pointerData?.pointer.x ?? 0}</div>
-            <div>y: {pointerData?.pointer.y ?? 0}</div>
-          </div>
-        </div>
-        <div className="excalidraw-wrapper">
-          <Excalidraw
-            excalidrawAPI={(api: ExcalidrawImperativeAPI) =>
-              setExcalidrawAPI(api)
+            Toggle Custom Sidebar
+          </Sidebar.Trigger>
+          {renderMenu()}
+          {excalidrawAPI && (
+            <TTDDialogTrigger icon={<span>😀</span>}>
+              Text to diagram ??
+            </TTDDialogTrigger>
+          )}
+          <TTDDialog
+            onTextSubmit={async (_) => {
+              console.info("submit");
+              // sleep for 2s
+              await new Promise((resolve) => setTimeout(resolve, 2000));
+              throw new Error("error, go away now");
+              // return "dummy";
+            }}
+          />
+        </Excalidraw>
+        {Object.keys(commentIcons || []).length > 0 && renderCommentIcons()}
+        {comment && renderComment()}
+      </div>
+
+      <div className="export-wrapper button-wrapper">
+        <label className="export-wrapper__checkbox">
+          <input
+            type="checkbox"
+            checked={exportWithDarkMode}
+            onChange={() => setExportWithDarkMode(!exportWithDarkMode)}
+          />
+          Export with dark mode
+        </label>
+        <label className="export-wrapper__checkbox">
+          <input
+            type="checkbox"
+            checked={exportEmbedScene}
+            onChange={() => setExportEmbedScene(!exportEmbedScene)}
+          />
+          Export with embed scene
+        </label>
+        <button
+          onClick={async () => {
+            if (!excalidrawAPI) {
+              return;
             }
-            initialData={initialStatePromiseRef.current.promise}
-            onChange={(elements, state) => {
-              // console.info("Elements :", elements, "State : ", state);
-            }}
-            onPointerUpdate={(payload: {
-              pointer: { x: number; y: number };
-              button: "down" | "up";
-              pointersMap: Gesture["pointers"];
-            }) => setPointerData(payload)}
-            viewModeEnabled={viewModeEnabled}
-            zenModeEnabled={zenModeEnabled}
-            gridModeEnabled={gridModeEnabled}
-            theme={theme}
-            name="Custom name of drawing"
-            UIOptions={{
-              canvasActions: {
-                loadScene: false,
+            const svg = await exportToSvg({
+              elements: excalidrawAPI?.getSceneElements(),
+              appState: {
+                ...initialData.appState,
+                exportWithDarkMode,
+                exportEmbedScene,
+                width: 300,
+                height: 100,
               },
-              tools: { image: !disableImageTool },
-            }}
-            renderTopRightUI={renderTopRightUI}
-            onLinkOpen={onLinkOpen}
-            onPointerDown={onPointerDown}
-            onScrollChange={rerenderCommentIcons}
-            // allow all urls
-            validateEmbeddable={true}
-          >
-            {excalidrawAPI && (
-              <Footer>
-                <CustomFooter excalidrawAPI={excalidrawAPI} />
-              </Footer>
-            )}
-            <WelcomeScreen />
-            <Sidebar name="custom">
-              <Sidebar.Tabs>
-                <Sidebar.Header />
-                <Sidebar.Tab tab="one">Tab one!</Sidebar.Tab>
-                <Sidebar.Tab tab="two">Tab two!</Sidebar.Tab>
-                <Sidebar.TabTriggers>
-                  <Sidebar.TabTrigger tab="one">One</Sidebar.TabTrigger>
-                  <Sidebar.TabTrigger tab="two">Two</Sidebar.TabTrigger>
-                </Sidebar.TabTriggers>
-              </Sidebar.Tabs>
-            </Sidebar>
-            <Sidebar.Trigger
-              name="custom"
-              tab="one"
-              style={{
-                position: "absolute",
-                left: "50%",
-                transform: "translateX(-50%)",
-                bottom: "20px",
-                zIndex: 9999999999999999,
-              }}
-            >
-              Toggle Custom Sidebar
-            </Sidebar.Trigger>
-            {renderMenu()}
-            {excalidrawAPI && (
-              <TTDDialogTrigger icon={<span>😀</span>}>
-                Text to diagram
-              </TTDDialogTrigger>
-            )}
-            <TTDDialog
-              onTextSubmit={async (_) => {
-                console.info("submit");
-                // sleep for 2s
-                await new Promise((resolve) => setTimeout(resolve, 2000));
-                throw new Error("error, go away now");
-                // return "dummy";
-              }}
-            />
-          </Excalidraw>
-          {Object.keys(commentIcons || []).length > 0 && renderCommentIcons()}
-          {comment && renderComment()}
+              files: excalidrawAPI?.getFiles(),
+            });
+            appRef.current.querySelector(".export-svg").innerHTML =
+              svg.outerHTML;
+          }}
+        >
+          Export to SVG
+        </button>
+        <div className="export export-svg"></div>
+
+        <button
+          onClick={async () => {
+            if (!excalidrawAPI) {
+              return;
+            }
+            const blob = await exportToBlob({
+              elements: excalidrawAPI?.getSceneElements(),
+              mimeType: "image/png",
+              appState: {
+                ...initialData.appState,
+                exportEmbedScene,
+                exportWithDarkMode,
+              },
+              files: excalidrawAPI?.getFiles(),
+            });
+            setBlobUrl(window.URL.createObjectURL(blob));
+          }}
+        >
+          Export to Blob
+        </button>
+        <div className="export export-blob">
+          <img src={blobUrl} alt="" />
         </div>
+        <button
+          onClick={async () => {
+            if (!excalidrawAPI) {
+              return;
+            }
+            const canvas = await exportToCanvas({
+              elements: excalidrawAPI.getSceneElements(),
+              appState: {
+                ...initialData.appState,
+                exportWithDarkMode,
+              },
+              files: excalidrawAPI.getFiles(),
+            });
+            const ctx = canvas.getContext("2d")!;
+            ctx.font = "30px Virgil";
+            ctx.strokeText("My custom text", 50, 60);
+            setCanvasUrl(canvas.toDataURL());
+          }}
+        >
+          Export to Canvas
+        </button>
+        <button
+          onClick={async () => {
+            if (!excalidrawAPI) {
+              return;
+            }
+            const canvas = await exportToCanvas({
+              elements: excalidrawAPI.getSceneElements(),
+              appState: {
+                ...initialData.appState,
+                exportWithDarkMode,
+              },
+              files: excalidrawAPI.getFiles(),
+            });
+            const ctx = canvas.getContext("2d")!;
+            ctx.font = "30px Virgil";
+            ctx.strokeText("My custom text", 50, 60);
+            setCanvasUrl(canvas.toDataURL());
+          }}
+        >
+          Export to Canvas
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            if (!excalidrawAPI) {
+              return;
+            }
 
-        <div className="export-wrapper button-wrapper">
-          <label className="export-wrapper__checkbox">
-            <input
-              type="checkbox"
-              checked={exportWithDarkMode}
-              onChange={() => setExportWithDarkMode(!exportWithDarkMode)}
-            />
-            Export with dark mode
-          </label>
-          <label className="export-wrapper__checkbox">
-            <input
-              type="checkbox"
-              checked={exportEmbedScene}
-              onChange={() => setExportEmbedScene(!exportEmbedScene)}
-            />
-            Export with embed scene
-          </label>
-          <button
-            onClick={async () => {
-              if (!excalidrawAPI) {
-                return;
-              }
-              const svg = await exportToSvg({
-                elements: excalidrawAPI?.getSceneElements(),
-                appState: {
-                  ...initialData.appState,
-                  exportWithDarkMode,
-                  exportEmbedScene,
-                  width: 300,
-                  height: 100,
-                },
-                files: excalidrawAPI?.getFiles(),
-              });
-              appRef.current.querySelector(".export-svg").innerHTML =
-                svg.outerHTML;
-            }}
-          >
-            Export to SVG
-          </button>
-          <div className="export export-svg"></div>
+            const elements = excalidrawAPI.getSceneElements();
+            excalidrawAPI.scrollToContent(elements[0], {
+              fitToViewport: true,
+            });
+          }}
+        >
+          Fit to viewport, first element
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            if (!excalidrawAPI) {
+              return;
+            }
 
-          <button
-            onClick={async () => {
-              if (!excalidrawAPI) {
-                return;
-              }
-              const blob = await exportToBlob({
-                elements: excalidrawAPI?.getSceneElements(),
-                mimeType: "image/png",
-                appState: {
-                  ...initialData.appState,
-                  exportEmbedScene,
-                  exportWithDarkMode,
-                },
-                files: excalidrawAPI?.getFiles(),
-              });
-              setBlobUrl(window.URL.createObjectURL(blob));
-            }}
-          >
-            Export to Blob
-          </button>
-          <div className="export export-blob">
-            <img src={blobUrl} alt="" />
-          </div>
-          <button
-            onClick={async () => {
-              if (!excalidrawAPI) {
-                return;
-              }
-              const canvas = await exportToCanvas({
-                elements: excalidrawAPI.getSceneElements(),
-                appState: {
-                  ...initialData.appState,
-                  exportWithDarkMode,
-                },
-                files: excalidrawAPI.getFiles(),
-              });
-              const ctx = canvas.getContext("2d")!;
-              ctx.font = "30px Virgil";
-              ctx.strokeText("My custom text", 50, 60);
-              setCanvasUrl(canvas.toDataURL());
-            }}
-          >
-            Export to Canvas
-          </button>
-          <button
-            onClick={async () => {
-              if (!excalidrawAPI) {
-                return;
-              }
-              const canvas = await exportToCanvas({
-                elements: excalidrawAPI.getSceneElements(),
-                appState: {
-                  ...initialData.appState,
-                  exportWithDarkMode,
-                },
-                files: excalidrawAPI.getFiles(),
-              });
-              const ctx = canvas.getContext("2d")!;
-              ctx.font = "30px Virgil";
-              ctx.strokeText("My custom text", 50, 60);
-              setCanvasUrl(canvas.toDataURL());
-            }}
-          >
-            Export to Canvas
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              if (!excalidrawAPI) {
-                return;
-              }
+            const elements = excalidrawAPI.getSceneElements();
+            excalidrawAPI.scrollToContent(elements[0], {
+              fitToContent: true,
+            });
 
-              const elements = excalidrawAPI.getSceneElements();
-              excalidrawAPI.scrollToContent(elements[0], {
-                fitToViewport: true,
-              });
-            }}
-          >
-            Fit to viewport, first element
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              if (!excalidrawAPI) {
-                return;
-              }
+            excalidrawAPI.scrollToContent(elements[0], {
+              fitToContent: true,
+            });
+          }}
+        >
+          Fit to content, first element
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            if (!excalidrawAPI) {
+              return;
+            }
 
-              const elements = excalidrawAPI.getSceneElements();
-              excalidrawAPI.scrollToContent(elements[0], {
-                fitToContent: true,
-              });
+            const elements = excalidrawAPI.getSceneElements();
+            excalidrawAPI.scrollToContent(elements[0], {
+              fitToContent: true,
+            });
 
-              excalidrawAPI.scrollToContent(elements[0], {
-                fitToContent: true,
-              });
-            }}
-          >
-            Fit to content, first element
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              if (!excalidrawAPI) {
-                return;
-              }
-
-              const elements = excalidrawAPI.getSceneElements();
-              excalidrawAPI.scrollToContent(elements[0], {
-                fitToContent: true,
-              });
-
-              excalidrawAPI.scrollToContent(elements[0]);
-            }}
-          >
-            Scroll to first element, no fitToContent, no fitToViewport
-          </button>
-          <div className="export export-canvas">
-            <img src={canvasUrl} alt="" />
-          </div>
+            excalidrawAPI.scrollToContent(elements[0]);
+          }}
+        >
+          Scroll to first element, no fitToContent, no fitToViewport
+        </button>
+        <div className="export export-canvas">
+          <img src={canvasUrl} alt="" />
         </div>
-      </ExampleSidebar>
+      </div>
     </div>
   );
 }

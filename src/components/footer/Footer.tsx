@@ -42,6 +42,7 @@ const Footer = ({
             appState.zenModeEnabled,
         })}
       >
+
         <Stack.Col gap={2}>
           <Section heading="canvasActions">
             <ZoomActions
@@ -71,6 +72,7 @@ const Footer = ({
         </Stack.Col>
       </div>
       <FooterCenterTunnel.Out />
+      
       <div
         className={clsx("layer-ui__wrapper__footer-right zen-mode-transition", {
           "transition-right": appState.zenModeEnabled,

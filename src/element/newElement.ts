@@ -165,6 +165,13 @@ export const newFrameElement = (
       ..._newElementBase<ExcalidrawFrameElement>("frame", opts),
       type: "frame",
       name: opts?.name || null,
+      customData: opts?.customData || {
+        macros: {
+          'save': true,
+          'open': true,
+          'publish': true,
+        }
+      },
     },
     {},
   );

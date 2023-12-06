@@ -88,7 +88,7 @@ export const ShapeMacros = ({
               const nadit = (adit as any).customData;
               if (nadit?.startBinding?.elementId != bit.id) continue;
               if (!nadit.endBinding?.elementId) continue;
-              git = nadit.label;
+              git = nadit.boundElements.find(inadit => inadit.type == 'text').text;
             }
             if (git.length > 0) {
               if (nit.has(git)) {
@@ -111,7 +111,16 @@ export const ShapeMacros = ({
     nit ? (<div className="panelColumn">
       <fieldset>
         <legend>Execute Macros</legend>
-
+        <Stack.Col className="buttonList" style={{ flexDirection: 'column' }}>
+          {Array.from(nit.keys()).map((anit) => {
+            const enit = nit.get(anit);
+            return (
+              <button key={anit} onClick={() => executeMacro(enit)} style={{ width: "100%" }}>
+                {enit?.length == 1 ? anit : `${anit} (x${enit?.length})`}
+              </button>
+            )
+          })}
+        </Stack.Col>
       </fieldset>
     </div>) : <></>
   );

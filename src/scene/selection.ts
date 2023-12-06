@@ -36,6 +36,7 @@ export const excludeElementsInFramesFromSelection = <
     if (element.frameId && framesInSelection.has(element.frameId)) {
       return false;
     }
+    if (element.type == 'meta') return false;
     return true;
   });
 };
