@@ -221,7 +221,6 @@ const LayerUI = ({
           maxHeight: `${appState.height - 166}px`, // Adjusted for overflow prevention similar to the original function.
         }}
       >
-        {/* Assuming ShapeMacros is a component that takes appState and elements as props */}
         <ShapeMacros
           appState={appState}
           elements={elements}
@@ -264,7 +263,7 @@ const LayerUI = ({
     );
 
     const macrosMemoized = useMemo(renderShapeMacros, [appState.selectedElementIds]);
-    const actionsMemoized = useMemo(renderSelectedShapeActions, [appState.selectedElementIds]); // TODO: make PR
+    const actionsMemoized = useMemo(renderSelectedShapeActions, [appState.selectedElementIds]);
 
     return (
       <FixedSideContainer side="top">
@@ -354,7 +353,7 @@ const LayerUI = ({
             </Section>
           )}
           <Stack.Col gap={6} className={clsx("App-menu_top__left")}>
-            {shouldRenderSelectedShapeActions && macrosMemoized}
+            {(shouldRenderSelectedShapeActions || window.permanentSelectedElementIds) && macrosMemoized}
           </Stack.Col>
         </div>
       </FixedSideContainer>
