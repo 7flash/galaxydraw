@@ -441,10 +441,11 @@ export const actionToggleHandTool = register({
       setCursor(app.interactiveCanvas, CURSOR_TYPE.GRAB);
     }
 
+    alert(JSON.stringify(appState.selectedElementIds));
+
     return {
       appState: {
         ...appState,
-        selectedElementIds: {},
         selectedGroupIds: {},
         activeEmbeddable: null,
         activeTool,
