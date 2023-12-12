@@ -52,14 +52,24 @@ export const ShapeMacros = ({
   executeMacro: Function
 }) => {
 
-    const nit = new Map<string, string[]>();
-    const kit = 17;
+  const nit = new Map<string, string[]>();
+  const kit = 17;
 
   try {
-    const targetElements = getTargetElements(
-      getNonDeletedElements(elements),
-      appState,
-    );
+    let targetElements;
+
+    if (window.permanentSelectedElementIds) {
+      targetElements = Object.keys(window.permanentSelectedElementIds).map(mit => {
+        if (window.permanentSelectedElementIds[mit] == true) {
+          return elements.find(sit => sit.id == mit);
+        }
+      }).filter(mit => mit != null)
+    } else {
+      targetElements = getTargetElements(
+        getNonDeletedElements(elements),
+        appState,
+      );
+    }
 
     for (const bit of targetElements) {
       const cit = bit.boundElements?.filter(abit => abit.type == 'arrow' || abit.type == 'meta').map(abit => abit.id);
