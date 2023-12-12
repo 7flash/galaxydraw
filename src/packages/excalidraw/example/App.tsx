@@ -35,6 +35,9 @@ import { KEYS } from "../../../keys";
 declare global {
   interface Window {
     ExcalidrawLib: typeof TExcalidraw;
+    webui: {
+      execute: Function,
+    }
   }
 }
 
@@ -93,8 +96,10 @@ export interface AppProps {
 }
 
 export default function App({ appTitle, useCustom, customArgs }: AppProps) {
-  window.webui = {
-    execute: console.log,
+  if (!window.webui) {
+    window.webui = {
+      execute: console.log,
+    }
   }
 
   const appRef = useRef<any>(null);
